@@ -58,6 +58,12 @@ namespace flow
             Refresh();
         }
 
+        private void OnMouseMove(object sender, MouseEventArgs e)
+        {
+            // calculate where the mouse is on the grid
+            Point gridOrigin = new Point(ClientRectangle.Width / 2 - imgGrid.Width / 2, ClientRectangle.Height / 2 - imgGrid.Height / 2);
+        }
+
         private void OnResize(object sender, EventArgs e)
         {
             ReplaceEdgeDockedControls();
