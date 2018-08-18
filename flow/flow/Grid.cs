@@ -18,6 +18,8 @@ namespace flow
             this.grid = grid;
         }
 
+
+
         /// <summary>
         /// Checks to make sure every dot on the grid has one matching counterpart and that there are no non-existent colors.
         /// </summary>
@@ -39,7 +41,7 @@ namespace flow
             }
             foreach(int j in tally)
             {
-                if (j != 0 && j != 0) return false;
+                if (j != 0 && j != 2) return false;
             }
             return true;
         }
