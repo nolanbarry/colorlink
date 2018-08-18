@@ -10,6 +10,22 @@ namespace flow
     public class Grid
     {
         public int[,] grid { get; private set; }
+        public int gridWidth
+        {
+            get
+            {
+                return grid.GetLength(0);
+            }
+        }
+
+        public int gridHeight
+        {
+            get
+            {
+                return grid.GetLength(1);
+            }
+        }
+
 
         /// <param name="grid">A rectangular array where -1 represents empty space and a positive number represents a color.</param>
         public Grid(int[,] grid)

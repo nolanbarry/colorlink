@@ -51,17 +51,27 @@ namespace flow
             MouseMove += new MouseEventHandler(OnMouseMove);
 
             currentLevel = ParseFileIntoGrid(0, "5x5.txt");
+            mouseX = 0;
+            mouseY = 0;
         }
         private void OnTick(object sender, EventArgs e)
         {
-            lblMousePosition.Text = PointToClient(MousePosition).ToString();
+            lblMousePosition.Text = mouseX + ", " + mouseY;
             Refresh();
         }
 
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
             // calculate where the mouse is on the grid
-            Point gridOrigin = new Point(ClientRectangle.Width / 2 - imgGrid.Width / 2, ClientRectangle.Height / 2 - imgGrid.Height / 2);
+            if (imgGrid != null)
+            {
+                Point gridOrigin = new Point(ClientRectangle.Width / 2 - imgGrid.Width / 2, ClientRectangle.Height / 2 - imgGrid.Height / 2);
+                Point mouseOnClient = PointToClient(MousePosition);
+                Point mouseOffset = new Point(mouseOnClient.X - gridOrigin.X, mouseOnClient.Y - gridOrigin.Y);
+                double squareLength = CalculateMaximumSquareSize(currentLevel.gridWidth, currentLevel.gridHeight);
+                mouseX = (int) Math.Floor(mouseOffset.X / squareLength);
+                mouseY = (int) Math.Floor(mouseOffset.Y / squareLength);
+            }
         }
 
         private void OnResize(object sender, EventArgs e)
@@ -125,7 +135,7 @@ namespace flow
 
         private Image DrawGrid(int height, int width)
         {
-            return DrawGrid(height, width, CalculateMaximumSquareSize(height, width));
+            return DrawGrid(height, width, CalculateMaximumSquareSize(width, height));
         }
 
         private int horizontalMargin = 20;
@@ -136,7 +146,7 @@ namespace flow
         /// <param name="height">Number of rows in grid.</param>
         /// <param name="width">Number of columns in grid.</param>
         /// <returns></returns>
-        private int CalculateMaximumSquareSize(int height, int width)
+        private int CalculateMaximumSquareSize(int width, int height)
         {
             int x, y, sizeByYAxis, sizeByXAxis;
             x = ClientRectangle.Width - horizontalMargin * 2;
@@ -170,7 +180,7 @@ namespace flow
         private float circleMargin = 0.3f;
         private void DrawGridTo(Graphics drawTo, Point center, int height, int width, Grid gridData)
         {
-            int squareLength = CalculateMaximumSquareSize(height, width);
+            int squareLength = CalculateMaximumSquareSize(width, height);
             Bitmap image = (Bitmap)DrawGrid(height, width, squareLength);
             Graphics g = Graphics.FromImage(image);
             g.SmoothingMode = SmoothingMode.AntiAlias;
