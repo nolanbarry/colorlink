@@ -8,16 +8,43 @@ using System.Drawing;
 namespace flow
 {
     public class Path
-    { 
+    {
         public enum Direction { Up, Right, Down, Left };
 
-        public Point beginPoint;
         public List<Direction> path { get; private set; }
+
+        public Point firstPoint;
+        public Point lastPoint
+        {
+            get
+            {
+                return asCoordinateArray.Last();
+            }
+        }
+        public Point[] asCoordinateArray
+        {
+            get
+            {
+                List<Point> coords = new List<Point>();
+                coords.Add(firstPoint);
+                foreach (Path.Direction d in path)
+                {
+                    int x = coords.Last().X;
+                    int y = coords.Last().Y;
+                    if ((int)d % 2 == 0)
+                        y += (1 - (int)d) * -1;
+                    else
+                        x += 2 - (int)d;
+                    coords.Add(new Point(x, y));
+                }
+                return coords.ToArray();
+            }
+        }
         public Path() : this(new Point(0, 0)) { }
 
         public Path(Point start)
         {
-            beginPoint = start;
+            firstPoint = start;
             path = new List<Direction>();
         }
 

@@ -59,9 +59,7 @@ namespace flow
         }
         private void OnTick(object sender, EventArgs e)
         {
-            lblMousePosition.Text = (currentPath == null).ToString();
-            if (currentPath != null) if (currentPath.path.Count > 4)
-                { }
+            lblMousePosition.Text = "";
             Refresh();
         }
 
@@ -94,17 +92,30 @@ namespace flow
 
                 if (currentPath != null)
                 {
-                    if (pMouseX != mouseX)
+                    if (new Point(pMouseX, pMouseY) == currentPath.lastPoint)
                     {
-                        if (mouseX > pMouseX) currentPath.Add(Path.Direction.Right);
-                        else currentPath.Add(Path.Direction.Left);
-                    }
-                    else if (pMouseY != mouseY)
-                    {
-                        if (mouseY > pMouseY) currentPath.Add(Path.Direction.Down);
-                        else currentPath.Add(Path.Direction.Up);
+                        List<Point> arr = currentPath.asCoordinateArray.ToList<Point>();
+                        if (arr.Count > 1)
+                        arr.RemoveAt(arr.Count - 2);
+
+                        if (!arr.Contains(new Point(mouseX, mouseY)))
+                            AddNewPointToPath(pMouseX, pMouseY, mouseX, mouseY);
                     }
                 }
+            }
+        }
+
+        private void AddNewPointToPath(int xold, int yold, int xnew, int ynew)
+        {
+            if (xold != xnew)
+            {
+                if (xnew > xold) currentPath.Add(Path.Direction.Right);
+                else currentPath.Add(Path.Direction.Left);
+            }
+            else if (yold != ynew)
+            {
+                if (ynew > yold) currentPath.Add(Path.Direction.Down);
+                else currentPath.Add(Path.Direction.Up);
             }
         }
 
@@ -233,8 +244,8 @@ namespace flow
             }
             if (currentPath != null)
             {
-                int x = currentPath.beginPoint.X;
-                int y = currentPath.beginPoint.Y;
+                int x = currentPath.firstPoint.X;
+                int y = currentPath.firstPoint.Y;
                 Pen draw = new Pen(Color.White, 20);
                 draw.EndCap = LineCap.Round;
                 draw.StartCap = LineCap.Round;
