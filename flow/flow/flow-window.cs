@@ -53,7 +53,7 @@ namespace flow
             MouseDown += new MouseEventHandler(OnMouseDown);
             MouseUp += new MouseEventHandler(OnMouseUp);
 
-            currentLevel = ParseFileIntoGrid(0, "5x5.txt");
+            currentLevel = FileParsing.ParseFileIntoGrid(0, "Levels1.txt");
             mouseX = 0;
             mouseY = 0;
         }
@@ -161,34 +161,6 @@ namespace flow
             lblMousePosition.Location = dummyPoint;
         }
 
-        private Grid ParseFileIntoGrid(int level, string path)
-        {
-            int rowCount = int.Parse("" + path.ToCharArray()[0]);
-            int line = level * (rowCount + 1);
-            string[] file = File.ReadAllLines("Assets\\Levels\\" + path);
-            string[][] levelStr = new string[rowCount][];
-            for(int i = 0; i < levelStr.Length; i++)
-            {
-                levelStr[i] = file[line].Split();
-                line++;
-            }
-            int[,] a = new int[rowCount, rowCount];
-            for(int i = 0; i < rowCount; i++)
-            {
-                for(int j = 0; j < rowCount; j++)
-                {
-                    try
-                    {
-                        a[i, j] = int.Parse(levelStr[i][j]);
-                    } catch
-                    {
-                        a[i, j] = -1;
-                    }
-                }
-            }
-            return new Grid(a);
-        }
-
         private void OnPaint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
@@ -199,7 +171,7 @@ namespace flow
                 g.FillEllipse(new SolidBrush(colorPallet[i]), new Rectangle(i * 25, 0, 25, 25));
             }
 
-            DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), 5, 5, currentLevel);
+            DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), currentLevel);
         }
 
         private Image DrawGrid(int height, int width)
@@ -247,8 +219,11 @@ namespace flow
         }
 
         private float circleMargin = 0.3f;
-        private void DrawGridTo(Graphics drawTo, Point center, int height, int width, Grid gridData)
+        private float pathSize = 0.3f;
+        private void DrawGridTo(Graphics drawTo, Point center, Grid gridData)
         {
+            int height = gridData.gridHeight;
+            int width = gridData.gridWidth;
             int squareLength = CalculateMaximumSquareSize(width, height);
             Bitmap image = (Bitmap)DrawGrid(height, width, squareLength);
             Graphics g = Graphics.FromImage(image);
@@ -290,7 +265,7 @@ namespace flow
         {
             int x = path.firstPoint.X;
             int y = path.firstPoint.Y;
-            Pen draw = new Pen(colorPallet[path.color], 20);
+            Pen draw = new Pen(colorPallet[path.color], squareLength * pathSize);
             draw.EndCap = LineCap.Round;
             draw.StartCap = LineCap.Round;
 

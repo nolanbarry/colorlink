@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FileParsing.cs" />
     <Compile Include="flow-window.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -83,7 +84,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Assets\Levels\5x5.txt">
+    <Content Include="Assets\Levels\Levels1.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="TODO.txt" />
