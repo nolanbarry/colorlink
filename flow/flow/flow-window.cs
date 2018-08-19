@@ -269,7 +269,15 @@ namespace flow
             }
             foreach(Path p in currentLevel.pathsOfColors)
             {
-                if (p != null) DrawPathTo(g, squareLength, p);
+                if (p != null)
+                {
+                    if (currentPath != null)
+                    {
+                        if (currentPath.color != p.color) DrawPathTo(g, squareLength, p);
+                    }
+                    else DrawPathTo(g, squareLength, p);
+                }
+
             }
             drawTo.DrawImage(image, new Point(center.X - image.Width / 2, center.Y - image.Height / 2));
             imgGrid = image;
