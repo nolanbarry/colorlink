@@ -31,6 +31,7 @@ namespace flow
         public int mouseX;
         public int mouseY;
         public Image imgGrid { get; private set; }
+        public Path currentPath;
 
         public flowindow()
         {
@@ -49,6 +50,8 @@ namespace flow
             Paint += new PaintEventHandler(OnPaint);
             Resize += new EventHandler(OnResize);
             MouseMove += new MouseEventHandler(OnMouseMove);
+            MouseDown += new MouseEventHandler(OnMouseDown);
+            MouseUp += new MouseEventHandler(OnMouseUp);
 
             currentLevel = ParseFileIntoGrid(0, "5x5.txt");
             mouseX = 0;
@@ -56,8 +59,23 @@ namespace flow
         }
         private void OnTick(object sender, EventArgs e)
         {
-            lblMousePosition.Text = mouseX + ", " + mouseY;
+            lblMousePosition.Text = (currentPath == null).ToString();
+            if (currentPath != null) if (currentPath.path.Count > 4)
+                { }
             Refresh();
+        }
+
+        private void OnMouseDown(object sender, MouseEventArgs e)
+        {
+            if (mouseX >= 0 && mouseX < currentLevel.gridWidth && mouseY >= 0 && mouseY < currentLevel.gridHeight)
+            {
+                currentPath = new Path(new Point(mouseX, mouseY));
+            }
+        }
+
+        private void OnMouseUp(object sender, MouseEventArgs e)
+        {
+            currentPath = null;
         }
 
         private void OnMouseMove(object sender, MouseEventArgs e)
@@ -65,12 +83,28 @@ namespace flow
             // calculate where the mouse is on the grid
             if (imgGrid != null)
             {
+                int pMouseX = mouseX;
+                int pMouseY = mouseY;
                 Point gridOrigin = new Point(ClientRectangle.Width / 2 - imgGrid.Width / 2, ClientRectangle.Height / 2 - imgGrid.Height / 2);
                 Point mouseOnClient = PointToClient(MousePosition);
                 Point mouseOffset = new Point(mouseOnClient.X - gridOrigin.X, mouseOnClient.Y - gridOrigin.Y);
                 double squareLength = CalculateMaximumSquareSize(currentLevel.gridWidth, currentLevel.gridHeight);
                 mouseX = (int) Math.Floor(mouseOffset.X / squareLength);
                 mouseY = (int) Math.Floor(mouseOffset.Y / squareLength);
+
+                if (currentPath != null)
+                {
+                    if (pMouseX != mouseX)
+                    {
+                        if (mouseX > pMouseX) currentPath.Add(Path.Direction.Right);
+                        else currentPath.Add(Path.Direction.Left);
+                    }
+                    else if (pMouseY != mouseY)
+                    {
+                        if (mouseY > pMouseY) currentPath.Add(Path.Direction.Down);
+                        else currentPath.Add(Path.Direction.Up);
+                    }
+                }
             }
         }
 
@@ -195,6 +229,29 @@ namespace flow
                     {
                         g.FillEllipse(new SolidBrush(colorPallet[startPoints[i, j]]), i * squareLength + margin, j * squareLength + margin, reverseMargin, reverseMargin);
                     }
+                }
+            }
+            if (currentPath != null)
+            {
+                int x = currentPath.beginPoint.X;
+                int y = currentPath.beginPoint.Y;
+                Pen draw = new Pen(Color.White, 20);
+                draw.EndCap = LineCap.Round;
+                draw.StartCap = LineCap.Round;
+
+                foreach(Path.Direction d in currentPath.path)
+                {
+                    int newx = x;
+                    int newy = y;
+                    if ((int)d % 2 == 0)
+                        newy += (1 - (int)d) * -1;
+                    else
+                        newx += 2 - (int)d;
+                    Point p1 = new Point(squareLength * x + squareLength / 2, squareLength * y + squareLength / 2);
+                    Point p2 = new Point(squareLength * newx + squareLength / 2, squareLength * newy + squareLength / 2);
+                    g.DrawLine(draw, p1, p2);
+                    x = newx;
+                    y = newy;
                 }
             }
             drawTo.DrawImage(image, new Point(center.X - image.Width / 2, center.Y - image.Height / 2));

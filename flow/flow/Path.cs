@@ -23,7 +23,12 @@ namespace flow
 
         public void Add(Direction d)
         {
-            if ((int)path.Last() % 2 == (int)d % 2) path.RemoveAt(path.Count);
+            if (path.Count > 0)
+            {
+                if ((int)path.Last() % 2 == (int)d % 2 && (int)path.Last() != (int)d)
+                    path.RemoveAt(path.Count - 1);
+                else path.Add(d);
+            }
             else path.Add(d);
         }
     }
