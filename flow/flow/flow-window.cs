@@ -53,6 +53,8 @@ namespace flow
             MouseDown += new MouseEventHandler(OnMouseDown);
             MouseUp += new MouseEventHandler(OnMouseUp);
 
+            OnResize(this, new EventArgs());
+
             currentLevel = FileParsing.ParseFileIntoGrid(0, "Levels1.txt");
             mouseX = 0;
             mouseY = 0;
@@ -61,6 +63,8 @@ namespace flow
         private void OnTick(object sender, EventArgs e)
         {
             lblMousePosition.Text = "";
+            horizontalMargin = (int)(0.05f * ClientRectangle.Width);
+            verticalMargin = (int)(0.05f * ClientRectangle.Height);
             Refresh();
         }
 
@@ -166,11 +170,6 @@ namespace flow
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.HighQuality;
 
-            for (int i = 0; i < colorPallet.Length; i++)
-            {
-                g.FillEllipse(new SolidBrush(colorPallet[i]), new Rectangle(i * 25, 0, 25, 25));
-            }
-
             DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), currentLevel);
         }
 
@@ -179,8 +178,8 @@ namespace flow
             return DrawGrid(height, width, CalculateMaximumSquareSize(width, height));
         }
 
-        private int horizontalMargin = 20;
-        private int verticalMargin = 50;
+        private int horizontalMargin;
+        private int verticalMargin;
         /// <summary>
         /// Calculates the maximum length each square can be in a grid given the grid's column and row count.
         /// </summary>
@@ -230,13 +229,16 @@ namespace flow
             g.SmoothingMode = SmoothingMode.AntiAlias;
             int[,] startPoints = gridData.grid;
             float margin = circleMargin / 2 * squareLength;
+            //float shadowMargin = (circleMargin - 0.07f) / 2 * squareLength;
             float reverseMargin = squareLength * (1 - circleMargin);
+            //float reverseShadowMargin = squareLength * (1 - (circleMargin - 0.07f));
             for (int i = 0; i < startPoints.GetLength(0); i++)
             {
                 for (int j = 0; j < startPoints.GetLength(1); j++)
                 {
                     if (startPoints[i, j] != -1)
                     {
+                        //g.FillEllipse(new SolidBrush(ControlPaint.Dark(colorPallet[startPoints[i, j]])), i * squareLength + shadowMargin, j * squareLength + shadowMargin, reverseShadowMargin, reverseShadowMargin);
                         g.FillEllipse(new SolidBrush(colorPallet[startPoints[i, j]]), i * squareLength + margin, j * squareLength + margin, reverseMargin, reverseMargin);
                     }
                 }
