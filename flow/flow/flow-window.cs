@@ -76,8 +76,8 @@ namespace flow
         {
             if (currentPath != null)
             {
-                if (mouseX >= 0 && mouseX < currentLevel.gridWidth && mouseY >= 0 && mouseY < currentLevel.gridHeight)
-                    currentLevel.EditPathOfColor(currentPath);
+                //if (mouseX >= 0 && mouseX < currentLevel.gridWidth && mouseY >= 0 && mouseY < currentLevel.gridHeight)
+                currentLevel.EditPathOfColor(currentPath);
                 currentPath = null;
             }
         }
@@ -121,23 +121,26 @@ namespace flow
         /// <param name="ynew">Post-frame mouse y<./param>
         private void AddNewPointToPath(int xold, int yold, int xnew, int ynew)
         {
-            if (xold != xnew)
-            {
-                if (xnew >= 0 && xnew < currentLevel.gridWidth)
+            if (xnew >= 0 && xnew < currentLevel.gridWidth // new position is within grid x bounds
+                && ynew >= 0 && ynew < currentLevel.gridHeight) // new position is within grid y bounds
+                if ((currentLevel.grid[xold, yold] != currentPath.color || currentPath.path.Count < 2 
+                        || new Point(xnew, ynew) == currentPath.asCoordinateArray[currentPath.asCoordinateArray.Length - 2]) // not moving through an endpoint
+                    && currentLevel.grid[xnew, ynew] == -1 || currentLevel.grid[xnew, ynew] == currentPath.color) // not moving to a different color's point    
                 {
-
-                    if (xnew > xold) currentPath.Add(Path.Direction.Right);
-                    else currentPath.Add(Path.Direction.Left);
+                    if (currentLevel.FlattenGrid(currentPath.color)[xnew, ynew] == -1)
+                    {
+                        if (xold != xnew)
+                        {
+                            if (xnew > xold) currentPath.Add(Path.Direction.Right);
+                            else currentPath.Add(Path.Direction.Left);
+                        }
+                        else if (yold != ynew)
+                        {
+                            if (ynew > yold) currentPath.Add(Path.Direction.Down);
+                            else currentPath.Add(Path.Direction.Up);
+                        }
+                    }
                 }
-            }
-            else if (yold != ynew)
-            {
-                if (ynew >= 0 && ynew < currentLevel.gridHeight)
-                {
-                    if (ynew > yold) currentPath.Add(Path.Direction.Down);
-                    else currentPath.Add(Path.Direction.Up);
-                }
-            }
         }
 
         private void OnResize(object sender, EventArgs e)

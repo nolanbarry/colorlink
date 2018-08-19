@@ -54,6 +54,25 @@ namespace flow
             pathsOfColors[index] = newPath;
         }
 
+        public int[,] FlattenGrid(int colorToNotInclude)
+        {
+            int[,] flat = new int[grid.GetLength(0), grid.GetLength(1)];
+            for (int i = 0; i < flat.GetLength(0); i++) for (int j = 0; j < flat.GetLength(1); j++) flat[i, j] = -1;
+            int num = 0;
+            foreach(Path p in pathsOfColors)
+            {
+                if (p != null && colorsPresent[num] != colorToNotInclude)
+                {
+                    foreach(Point point in p.asCoordinateArray)
+                    {
+                        flat[point.X, point.Y] = colorsPresent[num];
+                    }
+                }
+                num++;
+            }
+            return flat;
+        }
+
         /// <summary>
         /// Checks to make sure every dot on the grid has one matching counterpart and that there are no non-existent colors.
         /// </summary>
