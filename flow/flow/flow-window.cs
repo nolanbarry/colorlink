@@ -57,6 +57,7 @@ namespace flow
             mouseX = 0;
             mouseY = 0;
         }
+
         private void OnTick(object sender, EventArgs e)
         {
             lblMousePosition.Text = "";
@@ -65,15 +66,20 @@ namespace flow
 
         private void OnMouseDown(object sender, MouseEventArgs e)
         {
-            if (mouseX >= 0 && mouseX < currentLevel.gridWidth && mouseY >= 0 && mouseY < currentLevel.gridHeight)
-            {
-                currentPath = new Path(new Point(mouseX, mouseY));
-            }
+            if (mouseX >= 0 && mouseX < currentLevel.gridWidth 
+                && mouseY >= 0 && mouseY < currentLevel.gridHeight
+                && currentLevel.grid[mouseX, mouseY] >= 0)
+              currentPath = new Path(new Point(mouseX, mouseY), currentLevel.grid[mouseX, mouseY]);
         }
 
         private void OnMouseUp(object sender, MouseEventArgs e)
         {
-            currentPath = null;
+            if (currentPath != null)
+            {
+                if (mouseX >= 0 && mouseX < currentLevel.gridWidth && mouseY >= 0 && mouseY < currentLevel.gridHeight)
+                    currentLevel.EditPathOfColor(currentPath);
+                currentPath = null;
+            }
         }
 
         private void OnMouseMove(object sender, MouseEventArgs e)
@@ -90,6 +96,7 @@ namespace flow
                 mouseX = (int) Math.Floor(mouseOffset.X / squareLength);
                 mouseY = (int) Math.Floor(mouseOffset.Y / squareLength);
 
+                // add mouse position to path if applicable
                 if (currentPath != null)
                 {
                     if (new Point(pMouseX, pMouseY) == currentPath.lastPoint)
@@ -105,17 +112,31 @@ namespace flow
             }
         }
 
+        /// <summary>
+        /// If the mouse position has changed since the last frame, add it to the path. When called, assumes currentPath is active and the mouse is down.
+        /// </summary>
+        /// <param name="xold">Pre-frame mouse x.</param>
+        /// <param name="yold">Pre-frame mouse y.</param>
+        /// <param name="xnew">Post-frame mouse x.</param>
+        /// <param name="ynew">Post-frame mouse y<./param>
         private void AddNewPointToPath(int xold, int yold, int xnew, int ynew)
         {
             if (xold != xnew)
             {
-                if (xnew > xold) currentPath.Add(Path.Direction.Right);
-                else currentPath.Add(Path.Direction.Left);
+                if (xnew >= 0 && xnew < currentLevel.gridWidth)
+                {
+
+                    if (xnew > xold) currentPath.Add(Path.Direction.Right);
+                    else currentPath.Add(Path.Direction.Left);
+                }
             }
             else if (yold != ynew)
             {
-                if (ynew > yold) currentPath.Add(Path.Direction.Down);
-                else currentPath.Add(Path.Direction.Up);
+                if (ynew >= 0 && ynew < currentLevel.gridHeight)
+                {
+                    if (ynew > yold) currentPath.Add(Path.Direction.Down);
+                    else currentPath.Add(Path.Direction.Up);
+                }
             }
         }
 
@@ -244,29 +265,38 @@ namespace flow
             }
             if (currentPath != null)
             {
-                int x = currentPath.firstPoint.X;
-                int y = currentPath.firstPoint.Y;
-                Pen draw = new Pen(Color.White, 20);
-                draw.EndCap = LineCap.Round;
-                draw.StartCap = LineCap.Round;
-
-                foreach(Path.Direction d in currentPath.path)
-                {
-                    int newx = x;
-                    int newy = y;
-                    if ((int)d % 2 == 0)
-                        newy += (1 - (int)d) * -1;
-                    else
-                        newx += 2 - (int)d;
-                    Point p1 = new Point(squareLength * x + squareLength / 2, squareLength * y + squareLength / 2);
-                    Point p2 = new Point(squareLength * newx + squareLength / 2, squareLength * newy + squareLength / 2);
-                    g.DrawLine(draw, p1, p2);
-                    x = newx;
-                    y = newy;
-                }
+                DrawPathTo(g, squareLength, currentPath);
+            }
+            foreach(Path p in currentLevel.pathsOfColors)
+            {
+                if (p != null) DrawPathTo(g, squareLength, p);
             }
             drawTo.DrawImage(image, new Point(center.X - image.Width / 2, center.Y - image.Height / 2));
             imgGrid = image;
+        }
+
+        private void DrawPathTo(Graphics g, int squareLength, Path path)
+        {
+            int x = path.firstPoint.X;
+            int y = path.firstPoint.Y;
+            Pen draw = new Pen(colorPallet[path.color], 20);
+            draw.EndCap = LineCap.Round;
+            draw.StartCap = LineCap.Round;
+
+            foreach (Path.Direction d in path.path)
+            {
+                int newx = x;
+                int newy = y;
+                if ((int)d % 2 == 0)
+                    newy += (1 - (int)d) * -1;
+                else
+                    newx += 2 - (int)d;
+                Point p1 = new Point(squareLength * x + squareLength / 2, squareLength * y + squareLength / 2);
+                Point p2 = new Point(squareLength * newx + squareLength / 2, squareLength * newy + squareLength / 2);
+                g.DrawLine(draw, p1, p2);
+                x = newx;
+                y = newy;
+            }
         }
     }
 }

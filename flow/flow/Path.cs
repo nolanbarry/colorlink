@@ -40,11 +40,13 @@ namespace flow
                 return coords.ToArray();
             }
         }
-        public Path() : this(new Point(0, 0)) { }
+        public int color; // color of path, corresponds to flowindow.colorPallet
+        public Path() : this(new Point(0, 0), 0) { }
 
-        public Path(Point start)
+        public Path(Point start, int color)
         {
             firstPoint = start;
+            this.color = color;
             path = new List<Direction>();
         }
 
