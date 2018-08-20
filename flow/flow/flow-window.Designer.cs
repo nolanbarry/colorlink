@@ -40,6 +40,7 @@
             this.lblMousePosition.Size = new System.Drawing.Size(60, 25);
             this.lblMousePosition.TabIndex = 0;
             this.lblMousePosition.Text = "(x, y)";
+            this.lblMousePosition.Click += new System.EventHandler(this.lblMousePosition_Click);
             // 
             // flowindow
             // 

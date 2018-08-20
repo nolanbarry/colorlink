@@ -58,15 +58,15 @@ namespace flow
 
             do
             {
-                currentLevel = new Grid(Generator.GenerateLevel(5, 5)); //FileParsing.ParseFileIntoGrid(0, "Levels1.txt");
-            } while (!FileParsing.IsItSolvable(currentLevel.grid));
+                currentLevel = new Grid(Generator.GenerateLevel(3, 4)); //LevelManagement.ParseFileIntoGrid(0, "Levels1.txt");
+            } while (!LevelManagement.IsItSolvable(currentLevel.grid));
             mouseX = 0;
             mouseY = 0;
         }
 
         private void OnTick(object sender, EventArgs e)
         {
-            lblMousePosition.Text = "";
+            lblMousePosition.Text = "Show solution";
             horizontalMargin = (int)(0.05f * ClientRectangle.Width);
             verticalMargin = (int)(0.05f * ClientRectangle.Height);
             Refresh();
@@ -78,8 +78,8 @@ namespace flow
             {
                 do
                 {
-                    currentLevel = new Grid(Generator.GenerateLevel(5, 5));
-                } while (!FileParsing.IsItSolvable(currentLevel.grid));
+                    currentLevel = new Grid(Generator.GenerateLevel(3, 4));
+                } while (!LevelManagement.IsItSolvable(currentLevel.grid));
                 currentPath = null;
             }
         }
@@ -301,6 +301,11 @@ namespace flow
                 x = newx;
                 y = newy;
             }
+        }
+
+        private void lblMousePosition_Click(object sender, EventArgs e)
+        {
+            currentLevel = LevelManagement.lastSolution;
         }
     }
 }

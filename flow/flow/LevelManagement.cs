@@ -9,9 +9,8 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace flow
 {
-    public static class FileParsing
+    public static class LevelManagement
     {
-        public static SolvingVisualizer visualizer;
         public static Grid ParseFileIntoGrid(int targetLevel, string path)
         {
             string[] file = File.ReadAllLines("Assets\\Levels\\" + path);
@@ -50,6 +49,7 @@ namespace flow
             return g;
         }
 
+        public static Grid lastSolution;
         public static bool IsItSolvable(int[,] grid)
         {
             SolvingGrid info = new SolvingGrid(grid);
@@ -65,7 +65,11 @@ namespace flow
             {
                 SolvingGrid cloned = (SolvingGrid)DeepClone(info);
                 cloned.AddDirectionToCurrentPath(d);
-                if (cloned.state == SolvingGrid.SolveState.Success) return true;
+                if (cloned.state == SolvingGrid.SolveState.Success)
+                {
+                    lastSolution = new Grid(cloned);
+                    return true;
+                }
                 else if (cloned.state == SolvingGrid.SolveState.Solving)
                     if (Solve(cloned)) return true;
             }
@@ -127,6 +131,15 @@ namespace flow
         public SolvingGrid(int[,] grid)
         {
             this.grid = grid;
+                /*new int[grid.GetLength(1), grid.GetLength(0)];
+            for(int i = 0; i < grid.GetLength(0); i++)
+            {
+                for(int j = 0; j < grid.GetLength(1); j++)
+                {
+                    this.grid[j, i] = grid[i, j];
+                }
+            }
+            */
             startNodes = new List<Point>();
             endNodes = new List<Point>();
             List<int> colorsList = new List<int>();
@@ -170,12 +183,12 @@ namespace flow
         {
             grid = (int[,]) old.grid.Clone();
 
-            startNodes = (List<Point>)FileParsing.DeepClone(old.startNodes);
-            endNodes = (List<Point>)FileParsing.DeepClone(old.endNodes);
+            startNodes = (List<Point>)LevelManagement.DeepClone(old.startNodes);
+            endNodes = (List<Point>)LevelManagement.DeepClone(old.endNodes);
 
             colors = (int[]) old.colors.Clone();
 
-            pathsOfColors = (List<Path>)FileParsing.DeepClone(old.pathsOfColors);
+            pathsOfColors = (List<Path>)LevelManagement.DeepClone(old.pathsOfColors);
 
             state = SolveState.Solving;
         }

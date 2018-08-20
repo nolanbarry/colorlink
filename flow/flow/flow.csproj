@@ -45,7 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FileParsing.cs" />
+    <Compile Include="LevelManagement.cs" />
     <Compile Include="flow-window.cs">
       <SubType>Form</SubType>
     </Compile>
