@@ -48,6 +48,13 @@ namespace flow
             pathsOfColors = new Path[colorsPresent.Length];
         }
 
+        public Grid(SolvingGrid g)
+        {
+            grid = g.grid;
+            colorsPresent = g.colors;
+            pathsOfColors = g.pathsOfColors.ToArray();
+        }
+
         public void EditPathOfColor(Path newPath)
         {
             int index = Array.IndexOf(colorsPresent, newPath.color);

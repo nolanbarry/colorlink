@@ -7,6 +7,7 @@ using System.Drawing;
 
 namespace flow
 {
+    [Serializable()]
     public class Path
     {
         public enum Direction { Up, Right, Down, Left };
@@ -32,9 +33,9 @@ namespace flow
                     int x = coords.Last().X;
                     int y = coords.Last().Y;
                     if ((int)d % 2 == 0)
-                        y += (1 - (int)d) * -1;
+                        y += (1 - (int)d) * -1; // up, down
                     else
-                        x += 2 - (int)d;
+                        x += 2 - (int)d; // right, left
                     coords.Add(new Point(x, y));
                 }
                 return coords.ToArray();

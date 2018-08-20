@@ -52,10 +52,14 @@ namespace flow
             MouseMove += new MouseEventHandler(OnMouseMove);
             MouseDown += new MouseEventHandler(OnMouseDown);
             MouseUp += new MouseEventHandler(OnMouseUp);
+            KeyPress += new KeyPressEventHandler(OnKeyPress);
 
             OnResize(this, new EventArgs());
 
-            currentLevel = FileParsing.ParseFileIntoGrid(0, "Levels1.txt");
+            do
+            {
+                currentLevel = new Grid(Generator.GenerateLevel(5, 5)); //FileParsing.ParseFileIntoGrid(0, "Levels1.txt");
+            } while (!FileParsing.IsItSolvable(currentLevel.grid));
             mouseX = 0;
             mouseY = 0;
         }
@@ -66,6 +70,18 @@ namespace flow
             horizontalMargin = (int)(0.05f * ClientRectangle.Width);
             verticalMargin = (int)(0.05f * ClientRectangle.Height);
             Refresh();
+        }
+
+        private void OnKeyPress(object sender, KeyPressEventArgs e)
+        {
+            if(e.KeyChar == 'n')
+            {
+                do
+                {
+                    currentLevel = new Grid(Generator.GenerateLevel(5, 5));
+                } while (!FileParsing.IsItSolvable(currentLevel.grid));
+                currentPath = null;
+            }
         }
 
         private void OnMouseDown(object sender, MouseEventArgs e)
@@ -197,7 +213,7 @@ namespace flow
             else return sizeByYAxis;
         }
 
-        private Image DrawGrid(int height, int width, int squareLength)
+        public static Image DrawGrid(int height, int width, int squareLength)
         {
             gridOutline.Width = 1;
             Bitmap grid = new Bitmap(width * squareLength + 1, height * squareLength + 1);
@@ -245,7 +261,7 @@ namespace flow
             }
             if (currentPath != null)
             {
-                DrawPathTo(g, squareLength, currentPath);
+                DrawPathTo(g, squareLength, currentPath, pathSize);
             }
             foreach(Path p in currentLevel.pathsOfColors)
             {
@@ -253,9 +269,9 @@ namespace flow
                 {
                     if (currentPath != null)
                     {
-                        if (currentPath.color != p.color) DrawPathTo(g, squareLength, p);
+                        if (currentPath.color != p.color) DrawPathTo(g, squareLength, p, pathSize);
                     }
-                    else DrawPathTo(g, squareLength, p);
+                    else DrawPathTo(g, squareLength, p, pathSize);
                 }
 
             }
@@ -263,7 +279,7 @@ namespace flow
             imgGrid = image;
         }
 
-        private void DrawPathTo(Graphics g, int squareLength, Path path)
+        public static void DrawPathTo(Graphics g, int squareLength, Path path, float pathSize)
         {
             int x = path.firstPoint.X;
             int y = path.firstPoint.Y;
