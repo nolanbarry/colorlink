@@ -11,6 +11,12 @@ namespace flow
 {
     public static class LevelManagement
     {
+        /// <summary>
+        /// Returns the nth level in the given file as a Grid
+        /// </summary>
+        /// <param name="targetLevel">Which level to find in the file.</param>
+        /// <param name="path">The file path.</param>
+        /// <returns></returns>
         public static Grid ParseFileIntoGrid(int targetLevel, string path)
         {
             string[] file = File.ReadAllLines("Assets\\Levels\\" + path);
@@ -49,7 +55,16 @@ namespace flow
             return g;
         }
 
+        /// <summary>
+        /// The solution to the last solvable grid that was queried
+        /// </summary>
         public static Grid lastSolution;
+
+        /// <summary>
+        /// Returns true or false if a grid is solvable. If solvable, stores the solution in lastSolution.
+        /// </summary>
+        /// <param name="grid">A two dimensional int array representing the level.</param>
+        /// <returns></returns>
         public static bool IsItSolvable(int[,] grid)
         {
             SolvingGrid info = new SolvingGrid(grid);
@@ -57,6 +72,11 @@ namespace flow
             return Solve(info);
         }
 
+        /// <summary>
+        /// Recursive algorithm to solve a level.
+        /// </summary>
+        /// <param name="info">All the appropriate info stored in a SolvingGrid.</param>
+        /// <returns>Returns whether or not the level is solvable.</returns>
         private static bool Solve(SolvingGrid info)
         {
             Path.Direction[] potentials = GetMoveOptions(info);
@@ -77,7 +97,11 @@ namespace flow
             return solved;
         }
 
-        // TODO - MAKE IT SO PATH CANNOT TRACE OVER ITSELF, BUT CAN STILL GO TO ENDPOINT
+        /// <summary>
+        /// Gets the potential directions of the current active cell, or the last cell on the last path in the given SolvingGrid. 
+        /// </summary>
+        /// <param name="info">All the appropriate info in the form of a SolvingGrid.</param>
+        /// <returns>Direction array with all options.</returns>
         private static Path.Direction[] GetMoveOptions(SolvingGrid info)
         {
             int Y, X;
@@ -101,6 +125,10 @@ namespace flow
             return potentials.ToArray();
         }
 
+        /// <summary>
+        /// Deep clones an object. Object must be serializable.
+        /// </summary>
+        /// <returns>Deep cloned object</returns>
         public static object DeepClone(object obj)
         {
             object objResult = null;
@@ -117,6 +145,9 @@ namespace flow
 
     }
 
+    /// <summary>
+    /// A class similar to flow.Grid, the main differences being its increased editablity and extra information to make solving easier.
+    /// </summary>
     [Serializable()]
     public class SolvingGrid
     {
@@ -134,6 +165,7 @@ namespace flow
             startNodes = new List<Point>();
             endNodes = new List<Point>();
             List<int> colorsList = new List<int>();
+            // find the start nodes, colors, and end nodes
             for (int y = 0; y < grid.GetLength(0); y++)
             {
                 for (int x = 0; x < grid.GetLength(1); x++)
@@ -144,8 +176,7 @@ namespace flow
                         colorsList.Add(grid[y, x]);
                     } else if (colorsList.Contains(grid[y, x]))
                     {
-                        endNodes.Add(new Point(x, y)); // reversed so that calling point.X actually gives you the X value, not the Y value. BE CAREFUL OF THIS WHEN CALLING LATER
-                        // REMEMBER: int[,] calls for int[y,x]
+                        endNodes.Add(new Point(x, y)); 
                     }
                 }
             }
@@ -170,20 +201,10 @@ namespace flow
             endNodes = endNodesSorted;
         }
 
-        public SolvingGrid(SolvingGrid old)
-        {
-            grid = (int[,]) old.grid.Clone();
-
-            startNodes = (List<Point>)LevelManagement.DeepClone(old.startNodes);
-            endNodes = (List<Point>)LevelManagement.DeepClone(old.endNodes);
-
-            colors = (int[]) old.colors.Clone();
-
-            pathsOfColors = (List<Path>)LevelManagement.DeepClone(old.pathsOfColors);
-
-            state = SolveState.Solving;
-        }
-
+        /// <summary>
+        /// For use with figuring out whether or not a cell is available to move to.
+        /// </summary>
+        /// <returns>Returns the grid with the paths added to it as just colors, with no actual information on direction</returns>
         public int[,] FlattenGrid()
         {
             int[,] flat = new int[grid.GetLength(0), grid.GetLength(1)];
@@ -215,25 +236,10 @@ namespace flow
             return flat;
         }
 
-        public int[,] FlattenGridWithoutCurrentPath()
-        {
-            int[,] flat = new int[grid.GetLength(0), grid.GetLength(1)];
-            for (int i = 0; i < flat.GetLength(0); i++) for (int j = 0; j < flat.GetLength(1); j++) flat[i, j] = -1;
-            int num = 0;
-            foreach (Path p in pathsOfColors)
-            {
-                if (p != null && p != pathsOfColors.Last())
-                {
-                    foreach (Point point in p.asCoordinateArray)
-                    {
-                        flat[point.X, point.Y] = colors[num];
-                    }
-                }
-                num++;
-            }
-            return flat;
-        }
-
+        /// <summary>
+        /// Adds the given direction to the currently active path, and starts a new path if that finishes that pipe.
+        /// </summary>
+        /// <param name="d">The direction to add</param>
         public void AddDirectionToCurrentPath(Path.Direction d)
         {
             pathsOfColors.Last().Add(d);

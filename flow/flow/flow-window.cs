@@ -58,7 +58,7 @@ namespace flow
 
             do
             {
-                currentLevel = new Grid(Generator.GenerateLevel(3, 4)); //LevelManagement.ParseFileIntoGrid(0, "Levels1.txt");
+                currentLevel = new Grid(Generator.GenerateLevel(6, 6)); //LevelManagement.ParseFileIntoGrid(0, "Levels1.txt");
             } while (!LevelManagement.IsItSolvable(currentLevel.grid));
             mouseX = 0;
             mouseY = 0;
@@ -78,7 +78,7 @@ namespace flow
             {
                 do
                 {
-                    currentLevel = new Grid(Generator.GenerateLevel(3, 4));
+                    currentLevel = new Grid(Generator.GenerateLevel(6, 6));
                 } while (!LevelManagement.IsItSolvable(currentLevel.grid));
                 currentPath = null;
             }
@@ -245,16 +245,13 @@ namespace flow
             g.SmoothingMode = SmoothingMode.AntiAlias;
             int[,] startPoints = gridData.grid;
             float margin = circleMargin / 2 * squareLength;
-            //float shadowMargin = (circleMargin - 0.07f) / 2 * squareLength;
             float reverseMargin = squareLength * (1 - circleMargin);
-            //float reverseShadowMargin = squareLength * (1 - (circleMargin - 0.07f));
             for (int i = 0; i < startPoints.GetLength(0); i++)
             {
                 for (int j = 0; j < startPoints.GetLength(1); j++)
                 {
                     if (startPoints[i, j] != -1)
                     {
-                        //g.FillEllipse(new SolidBrush(ControlPaint.Dark(colorPallet[startPoints[i, j]])), i * squareLength + shadowMargin, j * squareLength + shadowMargin, reverseShadowMargin, reverseShadowMargin);
                         g.FillEllipse(new SolidBrush(colorPallet[startPoints[i, j]]), i * squareLength + margin, j * squareLength + margin, reverseMargin, reverseMargin);
                     }
                 }
