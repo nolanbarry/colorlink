@@ -53,6 +53,20 @@ namespace flow
             grid = g.grid;
             colorsPresent = g.colors;
             pathsOfColors = g.pathsOfColors.ToArray();
+            RotateFlipPaths(pathsOfColors); // for some weird reason SolvingGrid flips x and y axis (and some other funky stuff, either way this fixes it)
+        }
+
+        private void RotateFlipPaths(Path[] patharry)
+        {
+            foreach(Path p in patharry)
+            {
+                for(int i = 0; i < p.path.Count; i++)
+                {
+                    p.path[i] = (Path.Direction)(((int)p.path[i] + 1) % 4);
+                    if ((int) p.path[i] % 2 == 1) p.path[i] = (Path.Direction)(((int)p.path[i] + 2) % 4);
+                }
+                p.firstPoint = new Point(p.firstPoint.Y, p.firstPoint.X);
+            }
         }
 
         public void EditPathOfColor(Path newPath)

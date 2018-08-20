@@ -131,15 +131,6 @@ namespace flow
         public SolvingGrid(int[,] grid)
         {
             this.grid = grid;
-                /*new int[grid.GetLength(1), grid.GetLength(0)];
-            for(int i = 0; i < grid.GetLength(0); i++)
-            {
-                for(int j = 0; j < grid.GetLength(1); j++)
-                {
-                    this.grid[j, i] = grid[i, j];
-                }
-            }
-            */
             startNodes = new List<Point>();
             endNodes = new List<Point>();
             List<int> colorsList = new List<int>();
