@@ -32,7 +32,7 @@ namespace flow
         public int mouseY;
         public Image imgGrid { get; private set; }
         public Path currentPath;
-        public static Size gridGenerationSize = new Size(4, 4);
+        public static Size gridGenerationSize = new Size(6, 6);
 
         public flowindow()
         {
@@ -76,8 +76,13 @@ namespace flow
 
         private void OnTick(object sender, EventArgs e)
         {
+            if (currentLevel.solved)
+            {
+                lblMousePosition.Text = "Loading new level...";
+                Refresh();
+                NewLevel();
+            }
             lblMousePosition.Text = "Show solution";
-            if (currentLevel.solved) NewLevel();
             horizontalMargin = (int)(0.05f * ClientRectangle.Width);
             verticalMargin = (int)(0.05f * ClientRectangle.Height);
             Refresh();
@@ -313,7 +318,8 @@ namespace flow
 
         private void lblMousePosition_Click(object sender, EventArgs e)
         {
-            currentLevel = LevelManagement.lastSolution;
+            if (lblMousePosition.Text == "Show solution")
+                currentLevel = LevelManagement.lastSolution;
         }
     }
 }
