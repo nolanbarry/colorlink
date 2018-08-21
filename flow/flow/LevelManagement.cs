@@ -11,6 +11,7 @@ namespace flow
 {
     public static class LevelManagement
     {
+        #region File Parsing
         /// <summary>
         /// Returns the nth level in the given file as a Grid
         /// </summary>
@@ -44,17 +45,61 @@ namespace flow
                 {
                     try
                     {
-                        levelAsIntArr[i, j] = int.Parse(levelStr[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)[j]);
+                        levelAsIntArr[j, i] = int.Parse(levelStr[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)[j]);
                     } catch
                     {
-                        levelAsIntArr[i, j] = -1;
+                        levelAsIntArr[j, i] = -1;
                     }
                 }
+
             }
             Grid g = new Grid(levelAsIntArr);
             return g;
         }
+        #endregion
+        #region Level Generation
+        public static int[,] GenerateLevel(int width, int height)
+        {
+            if ((width == 1 && height == 1) || width < 1 || height < 1) throw new Exception("No");
+            Random gen = new Random();
+            int minus = 0; // gen.Next(3);
+            int colors = (int)(Math.Sqrt(width * height) - minus);
+            int[] colorsToUse = new int[colors];
+            for (int i = 0; i < colors; i++)
+            {
+                int chosenColor;
+                do
+                {
+                    chosenColor = gen.Next(flowindow.colorPallet.Length);
+                } while (colorsToUse.Contains(chosenColor));
+                colorsToUse[i] = chosenColor;
+            }
 
+            int[,] generated = new int[height, width]; // this is backward (not width, height) because it's really asksing for rows, columns
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    generated[i, j] = -1;
+                }
+            }
+            for (int i = 0; i < colors; i++)
+            {
+                for (int j = 0; j < 2; j++)
+                {
+                    int col, row;
+                    do
+                    {
+                        col = gen.Next(width);
+                        row = gen.Next(height);
+                    } while (generated[row, col] != -1);
+                    generated[row, col] = colorsToUse[i];
+                }
+            }
+            return generated;
+        }
+        #endregion
+        #region Level Solving
         /// <summary>
         /// The solution to the last solvable grid that was queried
         /// </summary>
@@ -68,6 +113,20 @@ namespace flow
         public static bool IsItSolvable(int[,] grid)
         {
             SolvingGrid info = new SolvingGrid(grid);
+            return Solve(info);
+        }
+
+        public static bool IsItSolvable(int[,] grid, bool filterLameGrids)
+        {
+            SolvingGrid info = new SolvingGrid(grid);
+
+            if (filterLameGrids) {
+                for (int i = 0; i < info.colors.Length; i++)
+                {
+                    if ((Math.Abs(info.startNodes[i].X - info.endNodes[i].X) == 1 && info.startNodes[i].Y == info.endNodes[i].Y)) return false;
+                    if ((Math.Abs(info.startNodes[i].Y - info.endNodes[i].Y) == 1 && info.startNodes[i].X == info.endNodes[i].X)) return false;
+                }
+            }
 
             return Solve(info);
         }
@@ -142,7 +201,7 @@ namespace flow
             }
             return objResult;
         }
-
+        #endregion
     }
 
     /// <summary>

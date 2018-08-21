@@ -12,6 +12,7 @@ namespace flow
         public int[,] grid { get; private set; }
         public int[] colorsPresent { get; private set; }
         public Path[] pathsOfColors { get; private set;  } // should line up with colors present array - the 0th color holds the 0th path, etc.
+        public bool solved { get; private set; }
         public int gridWidth
         {
             get
@@ -46,6 +47,7 @@ namespace flow
             }
             colorsPresent = colorsPresentAssembly.ToArray();
             pathsOfColors = new Path[colorsPresent.Length];
+            solved = false;
         }
 
         public Grid(SolvingGrid g)
@@ -54,6 +56,7 @@ namespace flow
             colorsPresent = g.colors;
             pathsOfColors = g.pathsOfColors.ToArray();
             RotateFlipPaths(pathsOfColors); // for some weird reason SolvingGrid flips x and y axis (and some other funky stuff, either way this fixes it)
+            solved = false;
         }
 
         private void RotateFlipPaths(Path[] patharry)
@@ -73,6 +76,23 @@ namespace flow
         {
             int index = Array.IndexOf(colorsPresent, newPath.color);
             pathsOfColors[index] = newPath;
+            CheckIfSolved();
+        }
+
+        /// <summary>
+        /// Sets the solved bool to true or false if all paths exist and end on an appropriate node.
+        /// </summary>
+        public void CheckIfSolved()
+        {
+            if (pathsOfColors.Contains(null)) { solved = false; return; }
+            List<int> oneDimensionalGrid = new List<int>();
+            foreach (int i in FlattenGrid(int.MaxValue)) oneDimensionalGrid.Add(i);
+            if (oneDimensionalGrid.Contains(-1)) { solved = false; return; }
+            solved = true;
+            foreach (Path p in pathsOfColors)
+            {
+                if (grid[p.lastPoint.X, p.lastPoint.Y] != p.color) solved = false;
+            }
         }
 
         public int[,] FlattenGrid(int colorToNotInclude)

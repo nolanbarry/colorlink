@@ -32,6 +32,7 @@ namespace flow
         public int mouseY;
         public Image imgGrid { get; private set; }
         public Path currentPath;
+        public static Size gridGenerationSize = new Size(4, 4);
 
         public flowindow()
         {
@@ -58,15 +59,25 @@ namespace flow
 
             do
             {
-                currentLevel = new Grid(Generator.GenerateLevel(6, 6)); //LevelManagement.ParseFileIntoGrid(0, "Levels1.txt");
-            } while (!LevelManagement.IsItSolvable(currentLevel.grid));
+                currentLevel = LevelManagement.ParseFileIntoGrid(0, "Levels1.txt");
+            } while (!LevelManagement.IsItSolvable(currentLevel.grid, true));
             mouseX = 0;
             mouseY = 0;
+        }
+
+        private void NewLevel()
+        {
+            do
+            {
+                currentLevel = new Grid(LevelManagement.GenerateLevel(gridGenerationSize.Width, gridGenerationSize.Height));
+            } while (!LevelManagement.IsItSolvable(currentLevel.grid, false));
+            currentPath = null;
         }
 
         private void OnTick(object sender, EventArgs e)
         {
             lblMousePosition.Text = "Show solution";
+            if (currentLevel.solved) NewLevel();
             horizontalMargin = (int)(0.05f * ClientRectangle.Width);
             verticalMargin = (int)(0.05f * ClientRectangle.Height);
             Refresh();
@@ -76,11 +87,11 @@ namespace flow
         {
             if(e.KeyChar == 'n')
             {
-                do
-                {
-                    currentLevel = new Grid(Generator.GenerateLevel(6, 6));
-                } while (!LevelManagement.IsItSolvable(currentLevel.grid));
-                currentPath = null;
+                NewLevel();
+            }
+            if(e.KeyChar == 'r')
+            {
+                currentLevel = new Grid(currentLevel.grid);
             }
         }
 
@@ -96,7 +107,6 @@ namespace flow
         {
             if (currentPath != null)
             {
-                //if (mouseX >= 0 && mouseX < currentLevel.gridWidth && mouseY >= 0 && mouseY < currentLevel.gridHeight)
                 currentLevel.EditPathOfColor(currentPath);
                 currentPath = null;
             }
