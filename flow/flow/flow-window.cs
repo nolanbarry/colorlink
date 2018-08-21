@@ -27,18 +27,21 @@ namespace flow
             ColorTranslator.FromHtml("#9c6ef6")  // purple
         };
         private static readonly Pen gridOutline = new Pen(ColorTranslator.FromHtml("#383838"));
-        public Grid currentLevel;
-        public int mouseX;
-        public int mouseY;
+        private Grid currentLevel;
+        private Grid solution;
+        private int mouseX;
+        private int mouseY;
         public Image imgGrid { get; private set; }
-        public Path currentPath;
-        public static Size gridGenerationSize = new Size(6, 6);
+        private Path currentPath;
+        private BackgroundWorker levelGenerator;
+        private static Size gridGenerationSize = new Size(5, 5);
 
         public flowindow()
         {
             InitializeComponent();
 
             DoubleBuffered = true;
+            levelGenerator = new BackgroundWorker();
 
             // timer setup
             ticker = new Timer();
@@ -54,6 +57,8 @@ namespace flow
             MouseDown += new MouseEventHandler(OnMouseDown);
             MouseUp += new MouseEventHandler(OnMouseUp);
             KeyPress += new KeyPressEventHandler(OnKeyPress);
+            levelGenerator.DoWork += new DoWorkEventHandler(GenerateLevelAsync);
+            levelGenerator.RunWorkerCompleted += new RunWorkerCompletedEventHandler(LevelGenerationComplete);
 
             OnResize(this, new EventArgs());
 
@@ -61,30 +66,44 @@ namespace flow
             {
                 currentLevel = LevelManagement.ParseFileIntoGrid(0, "Levels1.txt");
             } while (!LevelManagement.IsItSolvable(currentLevel.grid, true));
+            solution = LevelManagement.lastSolution;
             mouseX = 0;
             mouseY = 0;
         }
 
         private void NewLevel()
         {
+            if (!levelGenerator.IsBusy)
+            {
+                currentPath = null;
+                levelGenerator.RunWorkerAsync();
+            }
+        }
+
+        private void GenerateLevelAsync(object sender, DoWorkEventArgs e)
+        {
+            Grid gen;
             do
             {
-                currentLevel = new Grid(LevelManagement.GenerateLevel(gridGenerationSize.Width, gridGenerationSize.Height));
-            } while (!LevelManagement.IsItSolvable(currentLevel.grid, false));
-            currentPath = null;
+                gen = new Grid(LevelManagement.GenerateLevel(gridGenerationSize.Width, gridGenerationSize.Height));
+            } while (!LevelManagement.IsItSolvable(gen.grid, false));
+            e.Result = new GeneratedLevel(gen, LevelManagement.lastSolution);
+        }
+
+        private void LevelGenerationComplete(object sender, RunWorkerCompletedEventArgs e)
+        {
+            currentLevel = ((GeneratedLevel)e.Result).blankLevel;
+            solution = ((GeneratedLevel)e.Result).solution;
         }
 
         private void OnTick(object sender, EventArgs e)
         {
-            if (currentLevel.solved)
-            {
-                lblMousePosition.Text = "Loading new level...";
-                Refresh();
+            if (currentLevel.solved) 
                 NewLevel();
-            }
             lblMousePosition.Text = "Show solution";
             horizontalMargin = (int)(0.05f * ClientRectangle.Width);
             verticalMargin = (int)(0.05f * ClientRectangle.Height);
+            if (levelGenerator.IsBusy) lblMousePosition.Text = "Loading new level...";
             Refresh();
         }
 
@@ -319,7 +338,11 @@ namespace flow
         private void lblMousePosition_Click(object sender, EventArgs e)
         {
             if (lblMousePosition.Text == "Show solution")
-                currentLevel = LevelManagement.lastSolution;
+            {
+                //if (solution == null && LevelManagement.IsItSolvable(currentLevel.grid))
+                solution = LevelManagement.lastSolution;
+                currentLevel = solution;
+            }
         }
     }
 }
