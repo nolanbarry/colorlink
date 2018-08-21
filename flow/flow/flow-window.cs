@@ -121,8 +121,9 @@ namespace flow
                 int pMouseY = mouseY;
                 Point gridOrigin = new Point(ClientRectangle.Width / 2 - imgGrid.Width / 2, ClientRectangle.Height / 2 - imgGrid.Height / 2);
                 Point mouseOnClient = PointToClient(MousePosition);
-                Point mouseOffset = new Point(mouseOnClient.X - gridOrigin.X, mouseOnClient.Y - gridOrigin.Y);
+                Point mouseOffset = new Point(mouseOnClient.X - gridOrigin.X, mouseOnClient.Y - gridOrigin.Y); // offset so the origin is the top left corner of the grid
                 double squareLength = CalculateMaximumSquareSize(currentLevel.gridWidth, currentLevel.gridHeight);
+                // calculate which square the mouse is in
                 mouseX = (int) Math.Floor(mouseOffset.X / squareLength);
                 mouseY = (int) Math.Floor(mouseOffset.Y / squareLength);
 
@@ -131,9 +132,9 @@ namespace flow
                 {
                     if (new Point(pMouseX, pMouseY) == currentPath.lastPoint)
                     {
-                        List<Point> arr = currentPath.asCoordinateArray.ToList<Point>();
+                        List<Point> arr = currentPath.asCoordinateArray.ToList();
                         if (arr.Count > 1)
-                        arr.RemoveAt(arr.Count - 2);
+                            arr.RemoveAt(arr.Count - 2);
 
                         if (!arr.Contains(new Point(mouseX, mouseY)))
                             AddNewPointToPath(pMouseX, pMouseY, mouseX, mouseY);
@@ -153,8 +154,8 @@ namespace flow
         {
             if (xnew >= 0 && xnew < currentLevel.gridWidth // new position is within grid x bounds
                 && ynew >= 0 && ynew < currentLevel.gridHeight) // new position is within grid y bounds
-                if ((currentLevel.grid[xold, yold] != currentPath.color || currentPath.path.Count < 2 
-                        || new Point(xnew, ynew) == currentPath.asCoordinateArray[currentPath.asCoordinateArray.Length - 2]) // not moving through an endpoint
+                if ((currentLevel.grid[xold, yold] != currentPath.color || currentPath.path.Count < 1 // not moving through an endpoint
+                        || new Point(xnew, ynew) == currentPath.asCoordinateArray[currentPath.asCoordinateArray.Length - 2]) // if going back a space move is valid
                     && currentLevel.grid[xnew, ynew] == -1 || currentLevel.grid[xnew, ynew] == currentPath.color) // not moving to a different color's point    
                 {
                     if (currentLevel.FlattenGrid(currentPath.color)[xnew, ynew] == -1)
