@@ -35,7 +35,7 @@ namespace Colorlink
         public Image imgGrid { get; private set; }
         private Path currentPath;
         private static Size gridGenerationSize = new Size(5, 5);
-        private static int levelsToGenerateAtOnce = 3;
+        private static int levelsToGenerateAtOnce = 10;
         private PrivateFontCollection fonts;
         private PuzzleGenerator levelGenerator;
 
