@@ -19,18 +19,19 @@ namespace Colorlink
         private Timer ticker;
         public static string[] colors = new string[]
         {
-            "#ffc3a0", // pink
+            "#941717", // maroon
+            "#ff1616", // red
             "#ff7373", // salmon
+            "#ffc3a0", // pink
             "#f6b36e", // orange
+            "#ffbf00", // light orange
             "#f5f66e", // yellow
+            "#a3ff00", // light green
             "#6ef3f6", // baby blue
             "#3399ff", // dark blue
             "#9c6ef6",  // purple
-            "#a3ff00", // light green
-            "#ffbf00", // light orange
-            "#7d728a", // purple
-            "#ff1616", // red
-            "#941717", // maroon
+            "#7d728a" // purple
+
 
 
         };
@@ -246,7 +247,8 @@ namespace Colorlink
                 && ynew >= 0 && ynew < currentLevel.gridHeight) // new position is within grid y bounds
                 if ((currentLevel.grid[xold, yold] != currentPath.color || currentPath.path.Count < 1 // not moving through an endpoint
                         || new Point(xnew, ynew) == currentPath.asCoordinateArray[currentPath.asCoordinateArray.Length - 2]) // if going back a space move is valid
-                    && currentLevel.grid[xnew, ynew] == -1 || currentLevel.grid[xnew, ynew] == currentPath.color) // not moving to a different color's point    
+                    && currentLevel.grid[xnew, ynew] == -1 || currentLevel.grid[xnew, ynew] == currentPath.color // not moving to a different color's point   
+                    && !(xold != xnew && yold != ynew)) // not moving diagonally
                 {
                     if (currentLevel.FlattenGrid(currentPath.color)[xnew, ynew] == -1)
                     {
@@ -274,7 +276,7 @@ namespace Colorlink
                 DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), currentLevel);
                 for (int i = 0; i < colorPallet.Length; i++)
                 {
-                    Rectangle rect = new Rectangle(ClientRectangle.Width - 20 * i, 0, 20, 20);
+                    Rectangle rect = new Rectangle(ClientRectangle.Width - 20 * (i + 1), 0, 20, 20);
                     g.FillEllipse(new SolidBrush(colorPallet[i]), rect);
                 }
             }
