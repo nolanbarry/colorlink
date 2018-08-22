@@ -93,34 +93,30 @@ namespace Colorlink
             X = currentPath.lastPoint.X;
             List<Path.Direction> potentials = new List<Path.Direction>();
             int[,] grid = info.FlattenGrid();
-            try
+            if (Y - 1 >= 0)
             {
                 if (grid[Y - 1, X] == -1  // direction is valid if new square is not visited or new square is the endpoint for the color of the current path
                   || new Point(X, Y - 1) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
                     potentials.Add(Path.Direction.Up);
             }
-            catch { } // try catch is for catching array out of bounds errors, where nothing should be done.
-            try
+            if (Y + 1 < grid.GetLength(0))
             {
                 if (grid[Y + 1, X] == -1
                    || new Point(X, Y + 1) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
                     potentials.Add(Path.Direction.Down);
             }
-            catch { }
-            try
+            if (X - 1 >= 0)
             {
                 if (grid[Y, X - 1] == -1
                    || new Point(X - 1, Y) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
                     potentials.Add(Path.Direction.Left);
             }
-            catch { }
-            try
+            if (X + 1 < grid.GetLength(1))
             {
                 if (grid[Y, X + 1] == -1
                    || new Point(X + 1, Y) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
                     potentials.Add(Path.Direction.Right);
             }
-            catch { }
             return potentials.ToArray();
         }
 
@@ -154,12 +150,12 @@ namespace Colorlink
         private BackgroundWorker solver;
         private List<int[]> levelGenerationQueue;
         public bool working { get { return solver.IsBusy; } }
-        public List<GeneratedLevel> completedLevels { get; private set; }
+        public List<LevelPackage> completedLevels { get; private set; }
         public PuzzleGenerator()
         {
             solver = new BackgroundWorker();
             levelGenerationQueue = new List<int[]>();
-            completedLevels = new List<GeneratedLevel>();
+            completedLevels = new List<LevelPackage>();
             solver.DoWork += new DoWorkEventHandler(DoWork);
             solver.RunWorkerCompleted += new RunWorkerCompletedEventHandler(LevelGenerated);
         }
@@ -176,7 +172,7 @@ namespace Colorlink
 
         public void DoWork(object sender, DoWorkEventArgs e)
         {
-            GeneratedLevel gen =  GenerateSolvableLevel(levelGenerationQueue[0][0], levelGenerationQueue[0][1], levelGenerationQueue[0][2]);
+            LevelPackage gen =  GenerateSolvableLevel(levelGenerationQueue[0][0], levelGenerationQueue[0][1], levelGenerationQueue[0][2]);
             e.Result = gen;
         }
 
@@ -185,15 +181,15 @@ namespace Colorlink
             if (!e.Cancelled)
             {
                 levelGenerationQueue.RemoveAt(0);
-                completedLevels.Add((GeneratedLevel)e.Result);
+                completedLevels.Add((LevelPackage)e.Result);
                 if (levelGenerationQueue.Count > 0) solver.RunWorkerAsync();
                 else if (QueueCleared != null) QueueCleared(this, new EventArgs());
             }
         }
 
-        public GeneratedLevel RetrieveAndRemoveLevel()
+        public LevelPackage RetrieveAndRemoveLevel()
         {
-            GeneratedLevel g = completedLevels[0];
+            LevelPackage g = completedLevels[0];
             completedLevels.RemoveAt(0);
             return g;
         }
@@ -205,14 +201,43 @@ namespace Colorlink
         }
 
         #region Static Methods
-        public static GeneratedLevel GenerateSolvableLevel(int width, int height, int maxColor)
+        public static LevelPackage GenerateSolvableLevel(int width, int height, int maxColor)
+        {
+            return GenerateSolvableLevel(width, height, maxColor, false);
+        }
+
+        public static LevelPackage GenerateSolvableLevel(int width, int height, int maxColor, bool filterLame)
         {
             Grid gen;
             do
             {
                 gen = new Grid(GenerateLevel(width, height, maxColor));
-            } while (!PuzzleSolver.IsItSolvable(gen.grid, false));
-            return new GeneratedLevel(gen, PuzzleSolver.lastSolution);
+            } while (!PuzzleSolver.IsItSolvable(gen.grid, false) || !NotLame(gen, filterLame));
+            return new LevelPackage(gen, PuzzleSolver.lastSolution);
+        }
+
+        /// <summary>
+        /// Returns true if the given grid is 
+        /// </summary>
+        /// <param name="doanything">If this is false, it will automatically return true</param>
+        private static bool NotLame(Grid gen, bool doanything)
+        {
+            if (!doanything) return true;
+            for (int i = 0; i < gen.grid.GetLength(0); i++)
+            {
+                for (int j = 0; j < gen.grid.GetLength(1); j++)
+                {
+                    if (gen.grid[i, j] != -1)
+                    {
+                        int c = gen.grid[i, j];
+                        if (i + 1 < gen.grid.GetLength(0)) if (c == gen.grid[i + 1, j]) return false;
+                        if (i - 1 >= 0) if (c == gen.grid[i - 1, j]) return false;
+                        if (j + 1 < gen.grid.GetLength(1)) if (c == gen.grid[i, j + 1]) return false;
+                        if (j - 1 >= 0 ) if (c == gen.grid[i, j - 1]) return false;
+                    }
+                }
+            }
+            return true;
         }
 
         public static Random gen;
@@ -220,12 +245,8 @@ namespace Colorlink
         {
             if (gen == null) gen = new Random();
             if ((width == 1 && height == 1) || width < 1 || height < 1) throw new Exception("No");
-            int minus = gen.Next(1) - 1;
+            int minus = 0;
             int colors = (int)(Math.Sqrt(width * height) - minus);
-            if (colors > maxColor)
-            {
-                colors = maxColor + 1;
-            }
             int[] colorsToUse = new int[colors];
             for (int i = 0; i < colors; i++)
             {
@@ -260,6 +281,25 @@ namespace Colorlink
             }
             return generated;
         }
+        
+        public static string[] GridToString(int[,] grid)
+        {
+            string[] strGrid = new string[grid.GetLength(0)];
+            for(int i = 0; i < strGrid.Length; i++)
+            {
+                strGrid[i] = "";
+                for(int j = 0; j < grid.GetLength(1); j++)
+                {
+                    if (grid[i, j] != -1)
+                        strGrid[i] += grid[i, j] + " ";
+                    else
+                        strGrid[i] += "- ";
+                }
+                strGrid[i] = strGrid[i].Trim();
+            }
+            return strGrid;
+        }
+
         #endregion
     }
     /// <summary>
@@ -385,12 +425,12 @@ namespace Colorlink
     /// <summary>
     /// An all in one object for passing a blank level and solved level from BackgroundWorker to the UI
     /// </summary>
-    public class GeneratedLevel
+    public class LevelPackage
     {
         public Grid blankLevel { get; private set; }
         public Grid solution { get; private set; }
 
-        public GeneratedLevel(Grid level, Grid solution)
+        public LevelPackage(Grid level, Grid solution)
         {
             blankLevel = level;
             this.solution = solution;

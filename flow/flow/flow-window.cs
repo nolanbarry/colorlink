@@ -15,18 +15,37 @@ namespace Colorlink
 {
     public partial class flowindow : Form
     {
+        public enum LevelRetrievalMode { Generate, FromFile };
         private Timer ticker;
-        public static Color[] colorPallet = new Color[]
+        public static string[] colors = new string[]
         {
-            ColorTranslator.FromHtml("#ffc3a0"), // pink
-            ColorTranslator.FromHtml("#ff7373"), // salmon
-            ColorTranslator.FromHtml("#f6b36e"), // orange
-            ColorTranslator.FromHtml("#f5f66e"), // yellow
-            ColorTranslator.FromHtml("#7fffd4"), // light green
-            ColorTranslator.FromHtml("#6ef3f6"), // baby blue
-            ColorTranslator.FromHtml("#3399ff"), // dark blue
-            ColorTranslator.FromHtml("#9c6ef6")  // purple
+            "#ffc3a0", // pink
+            "#ff7373", // salmon
+            "#f6b36e", // orange
+            "#f5f66e", // yellow
+            "#6ef3f6", // baby blue
+            "#3399ff", // dark blue
+            "#9c6ef6",  // purple
+            "#a3ff00", // light green
+            "#ffbf00", // light orange
+            "#7d728a", // purple
+            "#ff1616", // red
+            "#941717", // maroon
+
+
         };
+        public static Color[] colorPallet
+        {
+            get
+            {
+                Color[] c = new Color[colors.Length];
+                for(int i = 0; i < c.Length; i++)
+                {
+                    c[i] = ColorTranslator.FromHtml(colors[i]);
+                }
+                return c;
+            }
+        }
         private static readonly Pen gridOutline = new Pen(ColorTranslator.FromHtml("#383838"));
         private Grid currentLevel;
         private Grid solution;
@@ -38,6 +57,8 @@ namespace Colorlink
         private static int levelsToGenerateAtOnce = 10;
         private PrivateFontCollection fonts;
         private PuzzleGenerator levelGenerator;
+        private LevelRetrievalMode mode = LevelRetrievalMode.FromFile;
+        private int level;
 
         public flowindow()
         {
@@ -45,7 +66,6 @@ namespace Colorlink
 
             DoubleBuffered = true;
             levelGenerator = new PuzzleGenerator();
-            levelGenerator.QueueLevels(levelsToGenerateAtOnce, gridGenerationSize.Width, gridGenerationSize.Height, colorPallet.Length - 1);
 
             // timer setup
             ticker = new Timer();
@@ -67,8 +87,16 @@ namespace Colorlink
             OnResize(this, new EventArgs());
 
 
-            currentLevel = Management.ParseFileIntoGrid(0, "Levels1.txt");
-            solution = PuzzleSolver.GetSolution(currentLevel.grid);
+            if(mode == LevelRetrievalMode.FromFile)
+            {
+                level = 0;
+                currentLevel = Management.ParseFileIntoGrid(level, "4x4.txt");
+            } else
+            {
+                LevelPackage g = PuzzleGenerator.GenerateSolvableLevel(4, 4, colorPallet.Length - 1);
+                currentLevel = g.blankLevel;
+                solution = g.solution;
+            }
 
             mouseX = 0;
             mouseY = 0;
@@ -76,7 +104,7 @@ namespace Colorlink
 
         private void NewGeneratedLevel()
         {
-            GeneratedLevel g = levelGenerator.RetrieveAndRemoveLevel();
+            LevelPackage g = levelGenerator.RetrieveAndRemoveLevel();
             currentLevel = g.blankLevel;
             solution = g.solution;
         }
@@ -84,17 +112,30 @@ namespace Colorlink
         #region All Other Events
         private void OnTick(object sender, EventArgs e)
         {
-            if (currentLevel.solved && levelGenerator.completedLevels.Count > 0)
+            if (mode == LevelRetrievalMode.Generate)
             {
-                NewGeneratedLevel();
-            } else if (currentLevel.solved)
-            {
-                lblMessage.Text = "Please wait while we generate some more levels...";
-                if (!levelGenerator.working) levelGenerator.QueueLevels(levelsToGenerateAtOnce, gridGenerationSize.Width, gridGenerationSize.Height, colorPallet.Length - 1);
+                if (currentLevel.solved && levelGenerator.completedLevels.Count > 0)
+                {
+                    NewGeneratedLevel();
+                }
+                else if (currentLevel.solved)
+                {
+                    lblMessage.Text = "Please wait while we generate some more levels...";
+                }
+                else
+                {
+                    lblMessage.Text = "...";
+                }
             } else
             {
-                lblMessage.Text = "...";
+                if (currentLevel.solved)
+                {
+                    level++;
+                    currentLevel = Management.ParseFileIntoGrid(level, "4x4.txt");
+                    solution = PuzzleSolver.GetSolution(currentLevel.grid);
+                }
             }
+            if (!levelGenerator.working && mode == LevelRetrievalMode.Generate) levelGenerator.QueueLevels(levelsToGenerateAtOnce, gridGenerationSize.Width, gridGenerationSize.Height, colorPallet.Length - 1);
             Refresh();
         }
 
@@ -115,7 +156,6 @@ namespace Colorlink
                 currentLevel = new Grid(currentLevel.grid);
             }
         }
-
         #region Mouse Events
         private void OnMouseDown(object sender, MouseEventArgs e)
         {
@@ -185,7 +225,7 @@ namespace Colorlink
                 double ratio = (double)imgEye.Height / imgEye.Width; // height = width * ratio
                 int resizedWidth = (int)(0.08f * (ClientRectangle.Width + ClientRectangle.Height) / 2);
                 int resizeHeight = (int)(ratio * resizedWidth);
-                imgEye = Management.ResizeImage(imgEye, resizedWidth, resizeHeight);
+                imgEye = flow.Resources.ResizeImage(imgEye, resizedWidth, resizeHeight);
                 pBoxShowSolution.Image = imgEye;
                 pBoxShowSolution.Size = imgEye.Size;
                 pBoxShowSolution.Location = new Point(imgEye.Width / 10, imgEye.Height / 10);
@@ -232,6 +272,11 @@ namespace Colorlink
                 g.SmoothingMode = SmoothingMode.HighQuality;
 
                 DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), currentLevel);
+                for (int i = 0; i < colorPallet.Length; i++)
+                {
+                    Rectangle rect = new Rectangle(ClientRectangle.Width - 20 * i, 0, 20, 20);
+                    g.FillEllipse(new SolidBrush(colorPallet[i]), rect);
+                }
             }
         }
 
