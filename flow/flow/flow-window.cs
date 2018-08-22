@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.IO;
 
 namespace flow
@@ -35,6 +36,8 @@ namespace flow
         private Path currentPath;
         private BackgroundWorker levelGenerator;
         private static Size gridGenerationSize = new Size(5, 5);
+        private List<GeneratedLevel> queuedLevels;
+        private PrivateFontCollection fonts;
 
         public flowindow()
         {
@@ -49,8 +52,10 @@ namespace flow
             ticker.Tick += new EventHandler(OnTick);
             ticker.Start();
 
+            FontSetup();
             ReplaceEdgeDockedControls();
 
+            // events
             Paint += new PaintEventHandler(OnPaint);
             Resize += new EventHandler(OnResize);
             MouseMove += new MouseEventHandler(OnMouseMove);
@@ -61,12 +66,14 @@ namespace flow
             levelGenerator.RunWorkerCompleted += new RunWorkerCompletedEventHandler(LevelGenerationComplete);
 
             OnResize(this, new EventArgs());
+            queuedLevels = new List<GeneratedLevel>();
 
-            do
-            {
-                currentLevel = LevelManagement.ParseFileIntoGrid(0, "Levels1.txt");
-            } while (!LevelManagement.IsItSolvable(currentLevel.grid, true));
-            solution = LevelManagement.lastSolution;
+
+            currentLevel = Management.ParseFileIntoGrid(0, "Levels1.txt");
+            solution = PuzzleSolver.GetSolution(currentLevel.grid);
+
+            levelGenerator.RunWorkerAsync();
+
             mouseX = 0;
             mouseY = 0;
         }
@@ -80,30 +87,47 @@ namespace flow
             }
         }
 
+        #region Level Generation / BackgroundWorker Event Handlers
         private void GenerateLevelAsync(object sender, DoWorkEventArgs e)
         {
-            Grid gen;
-            do
-            {
-                gen = new Grid(LevelManagement.GenerateLevel(gridGenerationSize.Width, gridGenerationSize.Height));
-            } while (!LevelManagement.IsItSolvable(gen.grid, false));
-            e.Result = new GeneratedLevel(gen, LevelManagement.lastSolution);
+            GeneratedLevel gen = PuzzleSolver.GenerateSolvableLevel(gridGenerationSize.Width, gridGenerationSize.Height);
+            e.Result = gen;
         }
 
         private void LevelGenerationComplete(object sender, RunWorkerCompletedEventArgs e)
         {
-            currentLevel = ((GeneratedLevel)e.Result).blankLevel;
-            solution = ((GeneratedLevel)e.Result).solution;
+            currentLevel.CheckIfSolved();
+            if (queuedLevels.Count == 0 && currentLevel.solved)
+            {
+                currentLevel = ((GeneratedLevel)e.Result).blankLevel;
+                solution = ((GeneratedLevel)e.Result).solution;
+            } else
+            {
+                queuedLevels.Add((GeneratedLevel)e.Result);
+            }
+            levelGenerator.RunWorkerAsync();
         }
-
+        #endregion
+        #region All Other Events
         private void OnTick(object sender, EventArgs e)
         {
-            if (currentLevel.solved) 
-                NewLevel();
-            lblMousePosition.Text = "Show solution";
-            horizontalMargin = (int)(0.05f * ClientRectangle.Width);
-            verticalMargin = (int)(0.05f * ClientRectangle.Height);
-            if (levelGenerator.IsBusy) lblMousePosition.Text = "Loading new level...";
+            if (currentLevel.solved && queuedLevels.Count > 0)
+            {
+                currentLevel = queuedLevels[0].blankLevel;
+                queuedLevels.RemoveAt(0);
+            } else if (currentLevel.solved)
+            {
+                lblMessage.Text = "Please wait while we generate some more levels...";
+            } else
+            {
+                lblMessage.Text = "...";
+            }
+            Refresh();
+        }
+
+        private void OnResize(object sender, EventArgs e)
+        {
+            ReplaceEdgeDockedControls();
             Refresh();
         }
 
@@ -119,6 +143,7 @@ namespace flow
             }
         }
 
+        #region Mouse Events
         private void OnMouseDown(object sender, MouseEventArgs e)
         {
             if (mouseX >= 0 && mouseX < currentLevel.gridWidth 
@@ -166,7 +191,32 @@ namespace flow
                 }
             }
         }
-
+        #endregion
+        #endregion
+        #region UI Positioning
+        private void ReplaceEdgeDockedControls()
+        {
+            // message text
+            Point dummyPoint = new Point();
+            lblMessage.Dock = DockStyle.Bottom;
+            dummyPoint.Y = lblMessage.Location.Y;
+            lblMessage.Dock = DockStyle.Left;
+            dummyPoint.X = lblMessage.Location.X;
+            lblMessage.Dock = DockStyle.None;
+            lblMessage.Location = dummyPoint;
+            lblMessage.Font = new Font(lblMessage.Font.FontFamily, ClientRectangle.Height / 30, FontStyle.Regular);
+            // show solution button
+            Image imgEye = Image.FromFile("Assets\\Images\\Bitmaps\\eyeinverted.png");
+            double ratio = (double)imgEye.Height / imgEye.Width; // height = width * ratio
+            int resizedWidth = (int)(0.08f * (ClientRectangle.Width + ClientRectangle.Height) / 2);
+            int resizeHeight = (int)(ratio * resizedWidth);
+            imgEye = Management.ResizeImage(imgEye, resizedWidth, resizeHeight);
+            pBoxShowSolution.Image = imgEye;
+            pBoxShowSolution.Size = imgEye.Size;
+            pBoxShowSolution.Location = new Point(imgEye.Width / 10, imgEye.Height / 10);
+        }
+        #endregion
+        #region UI Rendering & Paint Event
         /// <summary>
         /// If the mouse position has changed since the last frame, add it to the path. When called, assumes currentPath is active and the mouse is down.
         /// </summary>
@@ -198,24 +248,6 @@ namespace flow
                 }
         }
 
-        private void OnResize(object sender, EventArgs e)
-        {
-            ReplaceEdgeDockedControls();
-            Refresh();
-        }
-
-        private void ReplaceEdgeDockedControls()
-        {
-            // mouse position
-            Point dummyPoint = new Point();
-            lblMousePosition.Dock = DockStyle.Bottom;
-            dummyPoint.Y = lblMousePosition.Location.Y;
-            lblMousePosition.Dock = DockStyle.Left;
-            dummyPoint.X = lblMousePosition.Location.X;
-            lblMousePosition.Dock = DockStyle.None;
-            lblMousePosition.Location = dummyPoint;
-        }
-
         private void OnPaint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
@@ -239,6 +271,8 @@ namespace flow
         /// <returns></returns>
         private int CalculateMaximumSquareSize(int width, int height)
         {
+            horizontalMargin = (int)(0.1f * ClientRectangle.Width);
+            verticalMargin = (int)(0.1f * ClientRectangle.Height);
             int x, y, sizeByYAxis, sizeByXAxis;
             x = ClientRectangle.Width - horizontalMargin * 2;
             y = ClientRectangle.Height - verticalMargin * 2;
@@ -334,13 +368,18 @@ namespace flow
                 y = newy;
             }
         }
+        #endregion
 
-        private void lblMousePosition_Click(object sender, EventArgs e)
+        private void FontSetup()
         {
-            if (lblMousePosition.Text == "Show solution")
+            fonts = new PrivateFontCollection();
+            fonts.AddFontFile("Assets\\Fonts\\Inter-UI-Regular.otf");
+        }
+
+        private void ShowSolutionClicked(object sender, EventArgs e)
+        {
+            if (PuzzleSolver.IsItSolvable(currentLevel.grid) && !currentLevel.solved)
             {
-                //if (solution == null && LevelManagement.IsItSolvable(currentLevel.grid))
-                solution = LevelManagement.lastSolution;
                 currentLevel = solution;
             }
         }

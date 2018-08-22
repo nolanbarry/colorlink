@@ -1,60 +1,155 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
 using System.Drawing;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace flow
 {
-    public static class LevelManagement
+    public class PuzzleSolver
     {
-        #region File Parsing
-        /// <summary>
-        /// Returns the nth level in the given file as a Grid
-        /// </summary>
-        /// <param name="targetLevel">Which level to find in the file.</param>
-        /// <param name="path">The file path.</param>
-        /// <returns></returns>
-        public static Grid ParseFileIntoGrid(int targetLevel, string path)
+        #region General Methods
+        public static GeneratedLevel GenerateSolvableLevel(int width, int height)
         {
-            string[] file = File.ReadAllLines("Assets\\Levels\\" + path);
-            List<string> listFile = file.ToList();
-            listFile.Add("");
-            while (listFile[0].Trim() == "") listFile.RemoveAt(0);
-            file = listFile.ToArray();
-            int currentLevel = 0;
-            int line = 0;
-            while (currentLevel < targetLevel)
-            {
-                if (file[line].Trim() == "" && file[line+1].Trim() != "") currentLevel++;
-                line++;
-            }
-            List<string> levelStr = new List<string>();
+            Grid gen;
             do
             {
-                levelStr.Add(file[line]);
-                line++;
-            } while (file[line].Trim() != "");
-            int[,] levelAsIntArr = new int[levelStr[0].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length, levelStr.Count];
-            for(int i = 0; i < levelAsIntArr.GetLength(1); i++)
-            {
-                for(int j = 0; j < levelAsIntArr.GetLength(0); j++)
-                {
-                    try
-                    {
-                        levelAsIntArr[j, i] = int.Parse(levelStr[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)[j]);
-                    } catch
-                    {
-                        levelAsIntArr[j, i] = -1;
-                    }
-                }
+                gen = new Grid(PuzzleSolver.GenerateLevel(width, height));
+            } while (!IsItSolvable(gen.grid, false));
+            return new GeneratedLevel(gen, lastSolution);
+        }
 
+        /// <summary>
+        /// Gets the solution to a given grid.
+        /// </summary>
+        /// <returns>Returns a Grid object with the pathsOfColors array filled with the solved paths. Returns null if grid is not solvable.</returns>
+        public static Grid GetSolution(int[,] grid)
+        {
+            if (IsItSolvable(grid)) return lastSolution;
+            return null;
+        }
+        #endregion
+        #region Level Solving
+        /// <summary>
+        /// The solution to the last solvable grid that was queried
+        /// </summary>
+        public static Grid lastSolution;
+
+        /// <summary>
+        /// Returns true or false if a grid is solvable. If solvable, stores the solution in lastSolution.
+        /// </summary>
+        /// <param name="grid">A two dimensional int array representing the level.</param>
+        /// <returns></returns>
+        public static bool IsItSolvable(int[,] grid)
+        {
+            SolvingGrid info = new SolvingGrid(grid);
+            return Solve(info);
+        }
+
+        public static bool IsItSolvable(int[,] grid, bool filterLameGrids)
+        {
+            SolvingGrid info = new SolvingGrid(grid);
+
+            if (filterLameGrids)
+            {
+                for (int i = 0; i < info.colors.Length; i++)
+                {
+                    if ((Math.Abs(info.startNodes[i].X - info.endNodes[i].X) == 1 && info.startNodes[i].Y == info.endNodes[i].Y)) return false;
+                    if ((Math.Abs(info.startNodes[i].Y - info.endNodes[i].Y) == 1 && info.startNodes[i].X == info.endNodes[i].X)) return false;
+                }
             }
-            Grid g = new Grid(levelAsIntArr);
-            return g;
+
+            return Solve(info);
+        }
+
+        /// <summary>
+        /// Recursive algorithm to solve a level.
+        /// </summary>
+        /// <param name="info">All the appropriate info stored in a SolvingGrid.</param>
+        /// <returns>Returns whether or not the level is solvable.</returns>
+        private static bool Solve(SolvingGrid info)
+        {
+            Path.Direction[] potentials = GetMoveOptions(info);
+            bool solved = false;
+            foreach (Path.Direction d in potentials)
+            {
+                SolvingGrid cloned = (SolvingGrid)DeepClone(info);
+                cloned.AddDirectionToCurrentPath(d);
+                if (cloned.state == SolvingGrid.SolveState.Success)
+                {
+                    lastSolution = new Grid(cloned);
+                    return true;
+                }
+                else if (cloned.state == SolvingGrid.SolveState.Solving)
+                    if (Solve(cloned)) return true;
+            }
+
+            return solved;
+        }
+
+        /// <summary>
+        /// Gets the potential directions of the current active cell, or the last cell on the last path in the given SolvingGrid. 
+        /// </summary>
+        /// <param name="info">All the appropriate info in the form of a SolvingGrid.</param>
+        /// <returns>Direction array with all options.</returns>
+        private static Path.Direction[] GetMoveOptions(SolvingGrid info)
+        {
+            int Y, X;
+            Path currentPath = info.pathsOfColors.Last();
+            Y = currentPath.lastPoint.Y;
+            X = currentPath.lastPoint.X;
+            List<Path.Direction> potentials = new List<Path.Direction>();
+            int[,] grid = info.FlattenGrid();
+            try
+            {
+                if (grid[Y - 1, X] == -1  // direction is valid if new square is not visited or new square is the endpoint for the color of the current path
+                  || new Point(X, Y - 1) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
+                    potentials.Add(Path.Direction.Up);
+            }
+            catch { } // try catch is for catching array out of bounds errors, where nothing should be done.
+            try
+            {
+                if (grid[Y + 1, X] == -1
+                   || new Point(X, Y + 1) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
+                    potentials.Add(Path.Direction.Down);
+            }
+            catch { }
+            try
+            {
+                if (grid[Y, X - 1] == -1
+                   || new Point(X - 1, Y) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
+                    potentials.Add(Path.Direction.Left);
+            }
+            catch { }
+            try
+            {
+                if (grid[Y, X + 1] == -1
+                   || new Point(X + 1, Y) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
+                    potentials.Add(Path.Direction.Right);
+            }
+            catch { }
+            return potentials.ToArray();
+        }
+
+        /// <summary>
+        /// Deep clones an object. Object must be serializable.
+        /// </summary>
+        /// <returns>Deep cloned object</returns>
+        public static object DeepClone(object obj)
+        {
+            object objResult = null;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                bf.Serialize(ms, obj);
+
+                ms.Position = 0;
+                objResult = bf.Deserialize(ms);
+            }
+            return objResult;
         }
         #endregion
         #region Level Generation
@@ -62,7 +157,7 @@ namespace flow
         {
             if ((width == 1 && height == 1) || width < 1 || height < 1) throw new Exception("No");
             Random gen = new Random();
-            int minus = 0; // gen.Next(3);
+            int minus = gen.Next(1) - 1;
             int colors = (int)(Math.Sqrt(width * height) - minus);
             int[] colorsToUse = new int[colors];
             for (int i = 0; i < colors; i++)
@@ -99,109 +194,6 @@ namespace flow
             return generated;
         }
         #endregion
-        #region Level Solving
-        /// <summary>
-        /// The solution to the last solvable grid that was queried
-        /// </summary>
-        public static Grid lastSolution;
-
-        /// <summary>
-        /// Returns true or false if a grid is solvable. If solvable, stores the solution in lastSolution.
-        /// </summary>
-        /// <param name="grid">A two dimensional int array representing the level.</param>
-        /// <returns></returns>
-        public static bool IsItSolvable(int[,] grid)
-        {
-            SolvingGrid info = new SolvingGrid(grid);
-            return Solve(info);
-        }
-
-        public static bool IsItSolvable(int[,] grid, bool filterLameGrids)
-        {
-            SolvingGrid info = new SolvingGrid(grid);
-
-            if (filterLameGrids) {
-                for (int i = 0; i < info.colors.Length; i++)
-                {
-                    if ((Math.Abs(info.startNodes[i].X - info.endNodes[i].X) == 1 && info.startNodes[i].Y == info.endNodes[i].Y)) return false;
-                    if ((Math.Abs(info.startNodes[i].Y - info.endNodes[i].Y) == 1 && info.startNodes[i].X == info.endNodes[i].X)) return false;
-                }
-            }
-
-            return Solve(info);
-        }
-
-        /// <summary>
-        /// Recursive algorithm to solve a level.
-        /// </summary>
-        /// <param name="info">All the appropriate info stored in a SolvingGrid.</param>
-        /// <returns>Returns whether or not the level is solvable.</returns>
-        private static bool Solve(SolvingGrid info)
-        {
-            Path.Direction[] potentials = GetMoveOptions(info);
-            bool solved = false;
-            foreach(Path.Direction d in potentials)
-            {
-                SolvingGrid cloned = (SolvingGrid)DeepClone(info);
-                cloned.AddDirectionToCurrentPath(d);
-                if (cloned.state == SolvingGrid.SolveState.Success)
-                {
-                    lastSolution = new Grid(cloned);
-                    return true;
-                }
-                else if (cloned.state == SolvingGrid.SolveState.Solving)
-                    if (Solve(cloned)) return true;
-            }
-            
-            return solved;
-        }
-
-        /// <summary>
-        /// Gets the potential directions of the current active cell, or the last cell on the last path in the given SolvingGrid. 
-        /// </summary>
-        /// <param name="info">All the appropriate info in the form of a SolvingGrid.</param>
-        /// <returns>Direction array with all options.</returns>
-        private static Path.Direction[] GetMoveOptions(SolvingGrid info)
-        {
-            int Y, X;
-            Path currentPath = info.pathsOfColors.Last();
-            Y = currentPath.lastPoint.Y;
-            X = currentPath.lastPoint.X;
-            List<Path.Direction> potentials = new List<Path.Direction>();
-            int[,] grid = info.FlattenGrid();
-            try { if (grid[Y - 1, X] == -1  // direction is valid if new square is not visited or new square is the endpoint for the color of the current path
-                    || new Point(X, Y - 1) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
-                        potentials.Add(Path.Direction.Up); } catch { } // try catch is for catching array out of bounds errors, where nothing should be done.
-            try { if (grid[Y + 1, X] == -1
-                     || new Point(X, Y + 1) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
-                        potentials.Add(Path.Direction.Down); } catch { }
-            try { if (grid[Y, X - 1] == -1
-                     || new Point(X - 1, Y) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
-                        potentials.Add(Path.Direction.Left); } catch { }
-            try { if (grid[Y, X + 1] == -1
-                     || new Point(X + 1, Y) == info.endNodes[Array.IndexOf(info.colors, info.pathsOfColors.Last().color)])
-                        potentials.Add(Path.Direction.Right); } catch { }
-            return potentials.ToArray();
-        }
-
-        /// <summary>
-        /// Deep clones an object. Object must be serializable.
-        /// </summary>
-        /// <returns>Deep cloned object</returns>
-        public static object DeepClone(object obj)
-        {
-            object objResult = null;
-            using (MemoryStream ms = new MemoryStream())
-            {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ms, obj);
-
-                ms.Position = 0;
-                objResult = bf.Deserialize(ms);
-            }
-            return objResult;
-        }
-        #endregion
     }
 
     /// <summary>
@@ -233,9 +225,10 @@ namespace flow
                     {
                         startNodes.Add(new Point(x, y));
                         colorsList.Add(grid[y, x]);
-                    } else if (colorsList.Contains(grid[y, x]))
+                    }
+                    else if (colorsList.Contains(grid[y, x]))
                     {
-                        endNodes.Add(new Point(x, y)); 
+                        endNodes.Add(new Point(x, y));
                     }
                 }
             }
@@ -246,14 +239,14 @@ namespace flow
 
             // sort endNodes to correspond correctly with startNodes
             List<Point> endNodesSorted = new List<Point>();
-            for(int i = 0; i < startNodes.Count; i++)
+            for (int i = 0; i < startNodes.Count; i++)
             {
-                for(int j = 0; j < endNodes.Count; j++)
+                for (int j = 0; j < endNodes.Count; j++)
                 {
                     if (grid[endNodes[j].Y, endNodes[j].X] == colors[i])
                     {
                         endNodesSorted.Add(endNodes[j]);
-                        j = endNodes.Count;                     
+                        j = endNodes.Count;
                     }
                 }
             }
@@ -308,10 +301,11 @@ namespace flow
                 try
                 {
                     pathsOfColors.Add(new Path(startNodes[0], colors[1 + Array.IndexOf(colors, pathsOfColors.Last().color)]));
-                } catch
+                }
+                catch
                 {
                     bool successful = true;
-                    foreach(int i in FlattenGrid())
+                    foreach (int i in FlattenGrid())
                     {
                         if (i == -1) successful = false;
                     }
@@ -322,4 +316,18 @@ namespace flow
         }
     }
 
+    /// <summary>
+    /// An all in one object for passing a blank level and solved level from BackgroundWorker to the UI
+    /// </summary>
+    public class GeneratedLevel
+    {
+        public Grid blankLevel { get; private set; }
+        public Grid solution { get; private set; }
+
+        public GeneratedLevel(Grid level, Grid solution)
+        {
+            blankLevel = level;
+            this.solution = solution;
+        }
+    }
 }
