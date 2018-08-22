@@ -35,7 +35,7 @@ namespace flow
         public Image imgGrid { get; private set; }
         private Path currentPath;
         private BackgroundWorker levelGenerator;
-        private static Size gridGenerationSize = new Size(5, 5);
+        private static Size gridGenerationSize = new Size(7, 7);
         private List<GeneratedLevel> queuedLevels;
         private PrivateFontCollection fonts;
 
@@ -196,24 +196,27 @@ namespace flow
         #region UI Positioning
         private void ReplaceEdgeDockedControls()
         {
-            // message text
-            Point dummyPoint = new Point();
-            lblMessage.Dock = DockStyle.Bottom;
-            dummyPoint.Y = lblMessage.Location.Y;
-            lblMessage.Dock = DockStyle.Left;
-            dummyPoint.X = lblMessage.Location.X;
-            lblMessage.Dock = DockStyle.None;
-            lblMessage.Location = dummyPoint;
-            lblMessage.Font = new Font(lblMessage.Font.FontFamily, ClientRectangle.Height / 30, FontStyle.Regular);
-            // show solution button
-            Image imgEye = Image.FromFile("Assets\\Images\\Bitmaps\\eyeinverted.png");
-            double ratio = (double)imgEye.Height / imgEye.Width; // height = width * ratio
-            int resizedWidth = (int)(0.08f * (ClientRectangle.Width + ClientRectangle.Height) / 2);
-            int resizeHeight = (int)(ratio * resizedWidth);
-            imgEye = Management.ResizeImage(imgEye, resizedWidth, resizeHeight);
-            pBoxShowSolution.Image = imgEye;
-            pBoxShowSolution.Size = imgEye.Size;
-            pBoxShowSolution.Location = new Point(imgEye.Width / 10, imgEye.Height / 10);
+            if (!(WindowState == FormWindowState.Minimized))
+            {
+                // message text
+                Point dummyPoint = new Point();
+                lblMessage.Dock = DockStyle.Bottom;
+                dummyPoint.Y = lblMessage.Location.Y;
+                lblMessage.Dock = DockStyle.Left;
+                dummyPoint.X = lblMessage.Location.X;
+                lblMessage.Dock = DockStyle.None;
+                lblMessage.Location = dummyPoint;
+                lblMessage.Font = new Font(lblMessage.Font.FontFamily, ClientRectangle.Height / 30, FontStyle.Regular);
+                // show solution button
+                Image imgEye = Image.FromFile("Assets\\Images\\Bitmaps\\eyeinverted.png");
+                double ratio = (double)imgEye.Height / imgEye.Width; // height = width * ratio
+                int resizedWidth = (int)(0.08f * (ClientRectangle.Width + ClientRectangle.Height) / 2);
+                int resizeHeight = (int)(ratio * resizedWidth);
+                imgEye = Management.ResizeImage(imgEye, resizedWidth, resizeHeight);
+                pBoxShowSolution.Image = imgEye;
+                pBoxShowSolution.Size = imgEye.Size;
+                pBoxShowSolution.Location = new Point(imgEye.Width / 10, imgEye.Height / 10);
+            }
         }
         #endregion
         #region UI Rendering & Paint Event
@@ -250,10 +253,13 @@ namespace flow
 
         private void OnPaint(object sender, PaintEventArgs e)
         {
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.HighQuality;
+            if (!(WindowState == FormWindowState.Minimized))
+            {
+                Graphics g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.HighQuality;
 
-            DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), currentLevel);
+                DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), currentLevel);
+            }
         }
 
         private Image DrawGrid(int height, int width)
