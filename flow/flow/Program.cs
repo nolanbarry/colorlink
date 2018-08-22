@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace flow
+namespace Colorlink
 {
     static class Program
     {

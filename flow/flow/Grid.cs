@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 
-namespace flow
+namespace Colorlink
 {
     public class Grid
     {

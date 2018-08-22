@@ -1,4 +1,4 @@
-﻿namespace flow
+﻿namespace Colorlink
 {
     partial class flowindow
     {
