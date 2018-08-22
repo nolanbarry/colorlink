@@ -53,11 +53,8 @@
     <Compile Include="flow-window.Designer.cs">
       <DependentUpon>flow-window.cs</DependentUpon>
     </Compile>
-    <Compile Include="Grid.cs" />
-    <Compile Include="Path.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PuzzleSolver.cs" />
     <EmbeddedResource Include="flow-window.resx">
       <DependentUpon>flow-window.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -99,6 +96,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="TODO.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ColorlinkSolver\ColorlinkSolver.csproj">
+      <Project>{518e405b-c70b-4d6c-871e-7a1f526afb7c}</Project>
+      <Name>ColorlinkSolver</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

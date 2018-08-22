@@ -31,7 +31,7 @@ namespace Colorlink
         /// <param name="grid">A rectangular array where -1 represents empty space and a positive number represents a color.</param>
         public Grid(int[,] grid)
         {
-            if (!VerifyValidity(grid)) throw new Exception("The passed grid is not valid.");
+            if (!VerifyValidity(grid, int.MaxValue)) throw new Exception("The passed grid is not valid.");
             this.grid = grid;
 
             List<int> colorsPresentAssembly = new List<int>();
@@ -117,14 +117,14 @@ namespace Colorlink
         /// <summary>
         /// Checks to make sure every dot on the grid has one matching counterpart and that there are no non-existent colors.
         /// </summary>
-        private static bool VerifyValidity(int[,] grid)
+        private static bool VerifyValidity(int[,] grid, int maxColor)
         {
             List<int> tally = new List<int>();
             foreach(int i in grid)
             {
                 if (i >= 0)
                 {
-                    if (i > flowindow.colorPallet.Length - 1)
+                    if (i > maxColor)
                         return false;
                     while (tally.Count - 1 < i)
                     {

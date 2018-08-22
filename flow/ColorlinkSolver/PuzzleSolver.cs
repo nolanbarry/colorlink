@@ -4,24 +4,14 @@ using System.Linq;
 using System.Drawing;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Colorlink
 {
     public class PuzzleSolver
-    {
-        #region General Methods
-        public static GeneratedLevel GenerateSolvableLevel(int width, int height)
-        {
-            Grid gen;
-            do
-            {
-                gen = new Grid(PuzzleSolver.GenerateLevel(width, height));
-            } while (!IsItSolvable(gen.grid, false));
-            return new GeneratedLevel(gen, lastSolution);
-        }
-
+    {       
         /// <summary>
         /// Gets the solution to a given grid.
         /// </summary>
@@ -31,7 +21,7 @@ namespace Colorlink
             if (IsItSolvable(grid)) return lastSolution;
             return null;
         }
-        #endregion
+
         #region Level Solving
         /// <summary>
         /// The solution to the last solvable grid that was queried
@@ -152,20 +142,97 @@ namespace Colorlink
             return objResult;
         }
         #endregion
-        #region Level Generation
-        public static int[,] GenerateLevel(int width, int height)
+    }
+
+    public class PuzzleGenerator
+    {
+        /// <summary>
+        /// Event raised when there are no more levels in the generation queue.
+        /// </summary>
+        public event EventHandler QueueCleared;
+
+        private BackgroundWorker solver;
+        private List<int[]> levelGenerationQueue;
+        public bool working { get { return solver.IsBusy; } }
+        public List<GeneratedLevel> completedLevels { get; private set; }
+        public PuzzleGenerator()
         {
+            solver = new BackgroundWorker();
+            levelGenerationQueue = new List<int[]>();
+            completedLevels = new List<GeneratedLevel>();
+            solver.DoWork += new DoWorkEventHandler(DoWork);
+            solver.RunWorkerCompleted += new RunWorkerCompletedEventHandler(LevelGenerated);
+        }
+
+        public void QueueLevels(int numberToGenerate, int width, int height, int maxColor)
+        {
+            bool restartWorker = levelGenerationQueue.Count == 0;
+            for (int i = 0; i < numberToGenerate; i++)
+            {
+                levelGenerationQueue.Add(new int[] { width, height, maxColor });
+            }
+            if (restartWorker) solver.RunWorkerAsync();
+        }
+
+        public void DoWork(object sender, DoWorkEventArgs e)
+        {
+            GeneratedLevel gen =  GenerateSolvableLevel(levelGenerationQueue[0][0], levelGenerationQueue[0][1], levelGenerationQueue[0][2]);
+            e.Result = gen;
+        }
+
+        public void LevelGenerated(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (!e.Cancelled)
+            {
+                levelGenerationQueue.RemoveAt(0);
+                completedLevels.Add((GeneratedLevel)e.Result);
+                if (levelGenerationQueue.Count > 0) solver.RunWorkerAsync();
+                else if (QueueCleared != null) QueueCleared(this, new EventArgs());
+            }
+        }
+
+        public GeneratedLevel RetrieveAndRemoveLevel()
+        {
+            GeneratedLevel g = completedLevels[0];
+            completedLevels.RemoveAt(0);
+            return g;
+        }
+
+        public void CancelGenerationOfAll()
+        {
+            solver.CancelAsync();
+            levelGenerationQueue.Clear();
+        }
+
+        #region Static Methods
+        public static GeneratedLevel GenerateSolvableLevel(int width, int height, int maxColor)
+        {
+            Grid gen;
+            do
+            {
+                gen = new Grid(GenerateLevel(width, height, maxColor));
+            } while (!PuzzleSolver.IsItSolvable(gen.grid, false));
+            return new GeneratedLevel(gen, PuzzleSolver.lastSolution);
+        }
+
+        public static Random gen;
+        public static int[,] GenerateLevel(int width, int height, int maxColor)
+        {
+            if (gen == null) gen = new Random();
             if ((width == 1 && height == 1) || width < 1 || height < 1) throw new Exception("No");
-            Random gen = new Random();
             int minus = gen.Next(1) - 1;
             int colors = (int)(Math.Sqrt(width * height) - minus);
+            if (colors > maxColor)
+            {
+                colors = maxColor + 1;
+            }
             int[] colorsToUse = new int[colors];
             for (int i = 0; i < colors; i++)
             {
                 int chosenColor;
                 do
                 {
-                    chosenColor = gen.Next(flowindow.colorPallet.Length);
+                    chosenColor = gen.Next(maxColor);
                 } while (colorsToUse.Contains(chosenColor));
                 colorsToUse[i] = chosenColor;
             }
@@ -195,7 +262,6 @@ namespace Colorlink
         }
         #endregion
     }
-
     /// <summary>
     /// A class similar to flow.Grid, the main differences being its increased editablity and extra information to make solving easier.
     /// </summary>

@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorlinkApplication", "flow\ColorlinkApplication.csproj", "{14A8E6B5-48CF-4666-9B1B-B47FB6BD28F3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorlinkSolver", "ColorlinkSolver\ColorlinkSolver.csproj", "{518E405B-C70B-4D6C-871E-7A1F526AFB7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{14A8E6B5-48CF-4666-9B1B-B47FB6BD28F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14A8E6B5-48CF-4666-9B1B-B47FB6BD28F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{14A8E6B5-48CF-4666-9B1B-B47FB6BD28F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{518E405B-C70B-4D6C-871E-7A1F526AFB7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{518E405B-C70B-4D6C-871E-7A1F526AFB7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{518E405B-C70B-4D6C-871E-7A1F526AFB7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{518E405B-C70B-4D6C-871E-7A1F526AFB7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

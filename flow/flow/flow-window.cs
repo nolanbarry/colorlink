@@ -34,17 +34,18 @@ namespace Colorlink
         private int mouseY;
         public Image imgGrid { get; private set; }
         private Path currentPath;
-        private BackgroundWorker levelGenerator;
-        private static Size gridGenerationSize = new Size(7, 7);
-        private List<GeneratedLevel> queuedLevels;
+        private static Size gridGenerationSize = new Size(5, 5);
+        private static int levelsToGenerateAtOnce = 3;
         private PrivateFontCollection fonts;
+        private PuzzleGenerator levelGenerator;
 
         public flowindow()
         {
             InitializeComponent();
 
             DoubleBuffered = true;
-            levelGenerator = new BackgroundWorker();
+            levelGenerator = new PuzzleGenerator();
+            levelGenerator.QueueLevels(levelsToGenerateAtOnce, gridGenerationSize.Width, gridGenerationSize.Height, colorPallet.Length - 1);
 
             // timer setup
             ticker = new Timer();
@@ -62,62 +63,34 @@ namespace Colorlink
             MouseDown += new MouseEventHandler(OnMouseDown);
             MouseUp += new MouseEventHandler(OnMouseUp);
             KeyPress += new KeyPressEventHandler(OnKeyPress);
-            levelGenerator.DoWork += new DoWorkEventHandler(GenerateLevelAsync);
-            levelGenerator.RunWorkerCompleted += new RunWorkerCompletedEventHandler(LevelGenerationComplete);
 
             OnResize(this, new EventArgs());
-            queuedLevels = new List<GeneratedLevel>();
 
 
             currentLevel = Management.ParseFileIntoGrid(0, "Levels1.txt");
             solution = PuzzleSolver.GetSolution(currentLevel.grid);
 
-            levelGenerator.RunWorkerAsync();
-
             mouseX = 0;
             mouseY = 0;
         }
 
-        private void NewLevel()
+        private void NewGeneratedLevel()
         {
-            if (!levelGenerator.IsBusy)
-            {
-                currentPath = null;
-                levelGenerator.RunWorkerAsync();
-            }
+            GeneratedLevel g = levelGenerator.RetrieveAndRemoveLevel();
+            currentLevel = g.blankLevel;
+            solution = g.solution;
         }
 
-        #region Level Generation / BackgroundWorker Event Handlers
-        private void GenerateLevelAsync(object sender, DoWorkEventArgs e)
-        {
-            GeneratedLevel gen = PuzzleSolver.GenerateSolvableLevel(gridGenerationSize.Width, gridGenerationSize.Height);
-            e.Result = gen;
-        }
-
-        private void LevelGenerationComplete(object sender, RunWorkerCompletedEventArgs e)
-        {
-            currentLevel.CheckIfSolved();
-            if (queuedLevels.Count == 0 && currentLevel.solved)
-            {
-                currentLevel = ((GeneratedLevel)e.Result).blankLevel;
-                solution = ((GeneratedLevel)e.Result).solution;
-            } else
-            {
-                queuedLevels.Add((GeneratedLevel)e.Result);
-            }
-            levelGenerator.RunWorkerAsync();
-        }
-        #endregion
         #region All Other Events
         private void OnTick(object sender, EventArgs e)
         {
-            if (currentLevel.solved && queuedLevels.Count > 0)
+            if (currentLevel.solved && levelGenerator.completedLevels.Count > 0)
             {
-                currentLevel = queuedLevels[0].blankLevel;
-                queuedLevels.RemoveAt(0);
+                NewGeneratedLevel();
             } else if (currentLevel.solved)
             {
                 lblMessage.Text = "Please wait while we generate some more levels...";
+                if (!levelGenerator.working) levelGenerator.QueueLevels(levelsToGenerateAtOnce, gridGenerationSize.Width, gridGenerationSize.Height, colorPallet.Length - 1);
             } else
             {
                 lblMessage.Text = "...";
@@ -135,7 +108,7 @@ namespace Colorlink
         {
             if(e.KeyChar == 'n')
             {
-                NewLevel();
+                NewGeneratedLevel();
             }
             if(e.KeyChar == 'r')
             {
@@ -384,7 +357,7 @@ namespace Colorlink
 
         private void ShowSolutionClicked(object sender, EventArgs e)
         {
-            if (PuzzleSolver.IsItSolvable(currentLevel.grid) && !currentLevel.solved)
+            if (!currentLevel.solved)
             {
                 currentLevel = solution;
             }
