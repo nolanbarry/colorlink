@@ -29,11 +29,10 @@ namespace Colorlink
             "#a3ff00", // light green
             "#6ef3f6", // baby blue
             "#3399ff", // dark blue
+            "#050d97",
             "#9c6ef6",  // purple
-            "#7d728a" // purple
-
-
-
+            "#7d728a", // purple
+            "#ffffff" // white
         };
         public static Color[] colorPallet
         {
@@ -58,7 +57,7 @@ namespace Colorlink
         private static int levelsToGenerateAtOnce = 10;
         private PrivateFontCollection fonts;
         private PuzzleGenerator levelGenerator;
-        private LevelRetrievalMode mode = LevelRetrievalMode.FromFile;
+        private LevelRetrievalMode mode = LevelRetrievalMode.Generate;
         private int level;
 
         public flowindow()
@@ -90,8 +89,9 @@ namespace Colorlink
 
             if(mode == LevelRetrievalMode.FromFile)
             {
-                level = 0;
+                level = 29;
                 currentLevel = Management.ParseFileIntoGrid(level, "4x4.txt");
+                lblMessage.Text = "Level 1";
             } else
             {
                 LevelPackage g = PuzzleGenerator.GenerateSolvableLevel(4, 4, colorPallet.Length - 1);
@@ -132,6 +132,7 @@ namespace Colorlink
                 if (currentLevel.solved)
                 {
                     level++;
+                    lblMessage.Text = "Level " + (level + 1);
                     currentLevel = Management.ParseFileIntoGrid(level, "4x4.txt");
                     solution = PuzzleSolver.GetSolution(currentLevel.grid);
                 }
