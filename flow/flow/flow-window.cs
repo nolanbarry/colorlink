@@ -64,7 +64,7 @@ namespace Colorlink
 
             DoubleBuffered = true;
             FileParser.fileFolder = "Assets\\Levels\\";
-            method = new PuzzleRetriever("6x6.txt", 0, PuzzleRetriever.LevelRetrievalMode.FromFile, new Size(5, 5), colors.Length - 1);
+            method = new PuzzleRetriever("6x6.txt", PuzzleRetriever.RetrievalMethod.FromFile, colors.Length - 1);
 
             // timer setup
             ticker = new Timer();

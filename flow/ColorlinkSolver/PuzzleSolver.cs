@@ -324,6 +324,11 @@ namespace Colorlink
             return strGrid;
         }
 
+        public void QueueLevels(object width, int height, int maxColor)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
     }
     /// <summary>
