@@ -15,7 +15,6 @@ namespace Colorlink
 {
     public partial class flowindow : Form
     {
-        public enum LevelRetrievalMode { Generate, FromFile };
         private Timer ticker;
         public static string[] colors = new string[]
         {
@@ -47,25 +46,25 @@ namespace Colorlink
             }
         }
         private static readonly Pen gridOutline = new Pen(ColorTranslator.FromHtml("#383838"));
-        private Grid currentLevel;
-        private Grid solution;
+
+        private Puzzle currentPuzzle;
+        private PuzzleRetriever method;
+
+        private Path currentPath;
+
         private int mouseX;
         private int mouseY;
+
         public Image imgGrid { get; private set; }
-        private Path currentPath;
-        private static Size gridGenerationSize = new Size(5, 5);
-        private static int levelsToGenerateAtOnce = 10;
         private PrivateFontCollection fonts;
-        private PuzzleGenerator levelGenerator;
-        private LevelRetrievalMode mode = LevelRetrievalMode.Generate;
-        private int level;
 
         public flowindow()
         {
             InitializeComponent();
 
             DoubleBuffered = true;
-            levelGenerator = new PuzzleGenerator();
+            FileParser.fileFolder = "Assets\\Levels\\";
+            method = new PuzzleRetriever("6x6.txt", 0, PuzzleRetriever.LevelRetrievalMode.FromFile, new Size(5, 5), colors.Length - 1);
 
             // timer setup
             ticker = new Timer();
@@ -86,58 +85,25 @@ namespace Colorlink
 
             OnResize(this, new EventArgs());
 
-
-            if(mode == LevelRetrievalMode.FromFile)
-            {
-                level = 29;
-                currentLevel = Management.ParseFileIntoGrid(level, "4x4.txt");
-                lblMessage.Text = "Level 1";
-            } else
-            {
-                LevelPackage g = PuzzleGenerator.GenerateSolvableLevel(4, 4, colorPallet.Length - 1);
-                currentLevel = g.blankLevel;
-                solution = g.solution;
-            }
+            currentPuzzle = method.Next();
 
             mouseX = 0;
             mouseY = 0;
         }
 
-        private void NewGeneratedLevel()
-        {
-            LevelPackage g = levelGenerator.RetrieveAndRemoveLevel();
-            currentLevel = g.blankLevel;
-            solution = g.solution;
-        }
-
         #region All Other Events
         private void OnTick(object sender, EventArgs e)
         {
-            if (mode == LevelRetrievalMode.Generate)
+            if (currentPuzzle.level.solved)
             {
-                if (currentLevel.solved && levelGenerator.completedLevels.Count > 0)
+                if (method.status == PuzzleRetriever.RetrievalStatus.Generating)
                 {
-                    NewGeneratedLevel();
-                }
-                else if (currentLevel.solved)
+                    lblMessage.Text = "Please hold while we generate some more levels.";
+                } else
                 {
-                    lblMessage.Text = "Please wait while we generate some more levels...";
-                }
-                else
-                {
-                    lblMessage.Text = "...";
-                }
-            } else
-            {
-                if (currentLevel.solved)
-                {
-                    level++;
-                    lblMessage.Text = "Level " + (level + 1);
-                    currentLevel = Management.ParseFileIntoGrid(level, "4x4.txt");
-                    solution = PuzzleSolver.GetSolution(currentLevel.grid);
+                    currentPuzzle = method.Next();
                 }
             }
-            if (!levelGenerator.working && mode == LevelRetrievalMode.Generate) levelGenerator.QueueLevels(levelsToGenerateAtOnce, gridGenerationSize.Width, gridGenerationSize.Height, colorPallet.Length - 1);
             Refresh();
         }
 
@@ -149,29 +115,25 @@ namespace Colorlink
 
         private void OnKeyPress(object sender, KeyPressEventArgs e)
         {
-            if(e.KeyChar == 'n')
-            {
-                NewGeneratedLevel();
-            }
             if(e.KeyChar == 'r')
             {
-                currentLevel = new Grid(currentLevel.grid);
+                currentPuzzle.level = new Grid(currentPuzzle.level.grid);
             }
         }
         #region Mouse Events
         private void OnMouseDown(object sender, MouseEventArgs e)
         {
-            if (mouseX >= 0 && mouseX < currentLevel.gridWidth 
-                && mouseY >= 0 && mouseY < currentLevel.gridHeight
-                && currentLevel.grid[mouseX, mouseY] >= 0)
-              currentPath = new Path(new Point(mouseX, mouseY), currentLevel.grid[mouseX, mouseY]);
+            if (mouseX >= 0 && mouseX < currentPuzzle.level.gridWidth 
+                && mouseY >= 0 && mouseY < currentPuzzle.level.gridHeight
+                && currentPuzzle.level.grid[mouseX, mouseY] >= 0)
+              currentPath = new Path(new Point(mouseX, mouseY), currentPuzzle.level.grid[mouseX, mouseY]);
         }
 
         private void OnMouseUp(object sender, MouseEventArgs e)
         {
             if (currentPath != null)
             {
-                currentLevel.EditPathOfColor(currentPath);
+                currentPuzzle.level.EditPathOfColor(currentPath);
                 currentPath = null;
             }
         }
@@ -186,7 +148,7 @@ namespace Colorlink
                 Point gridOrigin = new Point(ClientRectangle.Width / 2 - imgGrid.Width / 2, ClientRectangle.Height / 2 - imgGrid.Height / 2);
                 Point mouseOnClient = PointToClient(MousePosition);
                 Point mouseOffset = new Point(mouseOnClient.X - gridOrigin.X, mouseOnClient.Y - gridOrigin.Y); // offset so the origin is the top left corner of the grid
-                double squareLength = CalculateMaximumSquareSize(currentLevel.gridWidth, currentLevel.gridHeight);
+                double squareLength = CalculateMaximumSquareSize(currentPuzzle.level.gridWidth, currentPuzzle.level.gridHeight);
                 // calculate which square the mouse is in
                 mouseX = (int) Math.Floor(mouseOffset.X / squareLength);
                 mouseY = (int) Math.Floor(mouseOffset.Y / squareLength);
@@ -244,14 +206,14 @@ namespace Colorlink
         /// <param name="ynew">Post-frame mouse y<./param>
         private void AddNewPointToPath(int xold, int yold, int xnew, int ynew)
         {
-            if (xnew >= 0 && xnew < currentLevel.gridWidth // new position is within grid x bounds
-                && ynew >= 0 && ynew < currentLevel.gridHeight) // new position is within grid y bounds
-                if ((currentLevel.grid[xold, yold] != currentPath.color || currentPath.path.Count < 1 // not moving through an endpoint
+            if (xnew >= 0 && xnew < currentPuzzle.level.gridWidth // new position is within grid x bounds
+                && ynew >= 0 && ynew < currentPuzzle.level.gridHeight) // new position is within grid y bounds
+                if ((currentPuzzle.level.grid[xold, yold] != currentPath.color || currentPath.path.Count < 1 // not moving through an endpoint
                         || new Point(xnew, ynew) == currentPath.asCoordinateArray[currentPath.asCoordinateArray.Length - 2]) // if going back a space move is valid
-                    && currentLevel.grid[xnew, ynew] == -1 || currentLevel.grid[xnew, ynew] == currentPath.color // not moving to a different color's point   
+                    && currentPuzzle.level.grid[xnew, ynew] == -1 || currentPuzzle.level.grid[xnew, ynew] == currentPath.color // not moving to a different color's point   
                     && !(xold != xnew && yold != ynew)) // not moving diagonally
                 {
-                    if (currentLevel.FlattenGrid(currentPath.color)[xnew, ynew] == -1)
+                    if (currentPuzzle.level.FlattenGrid(currentPath.color)[xnew, ynew] == -1)
                     {
                         if (xold != xnew)
                         {
@@ -274,7 +236,7 @@ namespace Colorlink
                 Graphics g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.HighQuality;
 
-                DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), currentLevel);
+                DrawGridTo(g, new Point(ClientRectangle.Width / 2, ClientRectangle.Height / 2), currentPuzzle.level);
                 for (int i = 0; i < colorPallet.Length; i++)
                 {
                     Rectangle rect = new Rectangle(ClientRectangle.Width - 20 * (i + 1), 0, 20, 20);
@@ -356,7 +318,7 @@ namespace Colorlink
             {
                 DrawPathTo(g, squareLength, currentPath, pathSize);
             }
-            foreach(Path p in currentLevel.pathsOfColors)
+            foreach(Path p in currentPuzzle.level.pathsOfColors)
             {
                 if (p != null)
                 {
@@ -405,10 +367,11 @@ namespace Colorlink
 
         private void ShowSolutionClicked(object sender, EventArgs e)
         {
-            if (!currentLevel.solved)
+            if (!currentPuzzle.level.solved)
             {
-                currentLevel = solution;
+                currentPuzzle.level = currentPuzzle.solution;
             }
         }
     }
 }
+

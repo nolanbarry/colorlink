@@ -34,7 +34,7 @@ namespace CLGen
             Console.WriteLine(filepath);
             Console.ForegroundColor = ConsoleColor.White;
 
-            List<LevelPackage> levels = new List<LevelPackage>();
+            List<Puzzle> levels = new List<Puzzle>();
             Console.Write("Progess: ");
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.Write("0");
@@ -52,9 +52,9 @@ namespace CLGen
             }
             Console.WriteLine();
             List<string> outputList = new List<string>();
-            foreach (LevelPackage g in levels)
+            foreach (Puzzle g in levels)
             {
-                string[] arr = PuzzleGenerator.GridToString(g.blankLevel.grid);
+                string[] arr = PuzzleGenerator.GridToString(g.level.grid);
                 foreach (string s in arr)
                 {
                     outputList.Add(s);

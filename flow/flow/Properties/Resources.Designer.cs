@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Colorlink.Properties {
+namespace flow.Properties {
     using System;
     
     

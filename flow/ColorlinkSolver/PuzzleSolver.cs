@@ -150,16 +150,20 @@ namespace Colorlink
         private BackgroundWorker solver;
         private List<int[]> levelGenerationQueue;
         public bool working { get { return solver.IsBusy; } }
-        public List<LevelPackage> completedLevels { get; private set; }
+        public List<Puzzle> completedLevels { get; private set; }
         public PuzzleGenerator()
         {
             solver = new BackgroundWorker();
             levelGenerationQueue = new List<int[]>();
-            completedLevels = new List<LevelPackage>();
+            completedLevels = new List<Puzzle>();
             solver.DoWork += new DoWorkEventHandler(DoWork);
             solver.RunWorkerCompleted += new RunWorkerCompletedEventHandler(LevelGenerated);
         }
 
+        /// <summary>
+        /// Adds the specified level data to the queue to be generated with the given parameters.
+        /// </summary>
+        /// <param name="maxColor">The maximum number to give any color in the grid.</param>
         public void QueueLevels(int numberToGenerate, int width, int height, int maxColor)
         {
             bool restartWorker = levelGenerationQueue.Count == 0;
@@ -170,50 +174,70 @@ namespace Colorlink
             if (restartWorker) solver.RunWorkerAsync();
         }
 
-        public void DoWork(object sender, DoWorkEventArgs e)
+        private void DoWork(object sender, DoWorkEventArgs e)
         {
-            LevelPackage gen =  GenerateSolvableLevel(levelGenerationQueue[0][0], levelGenerationQueue[0][1], levelGenerationQueue[0][2]);
+            Puzzle gen =  GenerateSolvableLevel(levelGenerationQueue[0][0], levelGenerationQueue[0][1], levelGenerationQueue[0][2]);
             e.Result = gen;
         }
 
-        public void LevelGenerated(object sender, RunWorkerCompletedEventArgs e)
+        private void LevelGenerated(object sender, RunWorkerCompletedEventArgs e)
         {
             if (!e.Cancelled)
             {
                 levelGenerationQueue.RemoveAt(0);
-                completedLevels.Add((LevelPackage)e.Result);
+                completedLevels.Add((Puzzle)e.Result);
                 if (levelGenerationQueue.Count > 0) solver.RunWorkerAsync();
-                else if (QueueCleared != null) QueueCleared(this, new EventArgs());
+                else QueueCleared?.Invoke(this, new EventArgs());
             }
         }
 
-        public LevelPackage RetrieveAndRemoveLevel()
+        /// <summary>
+        /// Returns a puzzle and removes it from the list within this object.
+        /// </summary>
+        public Puzzle RetrieveAndRemoveLevel()
         {
-            LevelPackage g = completedLevels[0];
+            return RetrieveAndRemoveLevel(false);
+        }
+        /// <summary>
+        /// Returns a puzzle and removes it from the completed levels list;
+        /// </summary>
+        /// <param name="restockQueue">Adds a new level to the queue with the exact same parameters as the one before it if marked true.</param>
+        /// <returns></returns>
+        public Puzzle RetrieveAndRemoveLevel(bool restockQueue)
+        {
+            Puzzle g = completedLevels[0];
             completedLevels.RemoveAt(0);
+            QueueLevels(1, levelGenerationQueue.Last()[0], levelGenerationQueue.Last()[1], levelGenerationQueue.Last()[2]);
             return g;
         }
 
-        public void CancelGenerationOfAll()
+        /// <summary>
+        /// Cancels current level generation and clears entire queue.
+        /// </summary>
+        public void CancelAll()
         {
             solver.CancelAsync();
             levelGenerationQueue.Clear();
         }
 
         #region Static Methods
-        public static LevelPackage GenerateSolvableLevel(int width, int height, int maxColor)
+        public static Puzzle GenerateSolvableLevel(int width, int height, int maxColor)
         {
             return GenerateSolvableLevel(width, height, maxColor, false);
         }
 
-        public static LevelPackage GenerateSolvableLevel(int width, int height, int maxColor, bool filterLame)
+        /// <summary>
+        /// Generates levels and checks their solvable status until one is found to be solvable.
+        /// </summary>
+        /// <param name="filterLame">Filter out levels where any one start node is adjacent to its end node. Takes much longer to generate.</param>
+        public static Puzzle GenerateSolvableLevel(int width, int height, int maxColor, bool filterLame)
         {
             Grid gen;
             do
             {
                 gen = new Grid(GenerateLevel(width, height, maxColor));
             } while (!PuzzleSolver.IsItSolvable(gen.grid, false) || !NotLame(gen, filterLame));
-            return new LevelPackage(gen, PuzzleSolver.lastSolution);
+            return new Puzzle(gen, PuzzleSolver.lastSolution);
         }
 
         /// <summary>
@@ -425,14 +449,14 @@ namespace Colorlink
     /// <summary>
     /// An all in one object for passing a blank level and solved level from BackgroundWorker to the UI
     /// </summary>
-    public class LevelPackage
+    public class Puzzle
     {
-        public Grid blankLevel { get; private set; }
+        public Grid level;
         public Grid solution { get; private set; }
 
-        public LevelPackage(Grid level, Grid solution)
+        public Puzzle(Grid level, Grid solution)
         {
-            blankLevel = level;
+            this.level = level;
             this.solution = solution;
         }
     }
