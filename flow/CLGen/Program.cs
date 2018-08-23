@@ -17,6 +17,8 @@ namespace CLGen
             int width = int.Parse(args[1]);
             int height = int.Parse(args[2]);
             int maxColor = int.Parse(args[3]);
+            int numberOfPipes = -1;
+            if (args.Length > 4) numberOfPipes = int.Parse(args[4]);
             Console.WriteLine($"Generating {num} {width}x{height} colorlink level(s), with {(maxColor + 1)} possible colors");
             int startCursor = Console.CursorTop;
             string filename = $"{width}x{height}.txt";
@@ -42,7 +44,7 @@ namespace CLGen
             Console.Write(" of " + num);
             for (int j = 0; j < num; j++)
             {
-                levels.Add(PuzzleGenerator.GenerateSolvableLevel(width, height, maxColor, false));
+                levels.Add(PuzzleGenerator.GenerateSolvableLevel(width, height, maxColor, false, numberOfPipes));
                 Console.CursorTop = 2 + startCursor;
                 Console.CursorLeft = 9;
                 Console.ForegroundColor = ConsoleColor.Cyan;

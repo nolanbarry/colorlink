@@ -35,7 +35,7 @@ namespace Colorlink
         public PuzzleRetriever(int level) : this("4x4.txt", level) { }
         public PuzzleRetriever(string defaultFile, int level) : this(defaultFile, level, RetrievalMethod.FromFile) { }
         public PuzzleRetriever(string defaultFile, RetrievalMethod mode) : this(defaultFile, 0, mode) { }
-        public PuzzleRetriever(string defaultFile, RetrievalMethod mode, int maxColor) : this(defaultFile, -1, mode, new Size(5, 5), maxColor) { }
+        public PuzzleRetriever(string defaultFile, RetrievalMethod mode, int maxColor) : this(defaultFile, 0, mode, new Size(5, 5), maxColor) { }
         public PuzzleRetriever(string defaultFile, int level, RetrievalMethod mode) : this(defaultFile, level, mode, new Size(5, 5)) { }
         public PuzzleRetriever(string defaultFile, int level, RetrievalMethod mode, Size generationSize) : this(defaultFile, level, mode, generationSize, 10) { }
 
@@ -52,7 +52,6 @@ namespace Colorlink
 
         public Puzzle Next()
         {
-            level++;
             if (mode == RetrievalMethod.Generate)
             {
                 if (status == RetrievalStatus.Ready)

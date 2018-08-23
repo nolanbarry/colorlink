@@ -101,8 +101,13 @@ namespace Colorlink
                     lblMessage.Text = "Please hold while we generate some more levels.";
                 } else
                 {
+                    lblMessage.Text = "Nicely done!";
+                    Refresh();
                     currentPuzzle = method.Next();
                 }
+            } else if (method.status == PuzzleRetriever.RetrievalStatus.Ready)
+            {
+                lblMessage.Text = "Level " + (method.level + 1);
             }
             Refresh();
         }

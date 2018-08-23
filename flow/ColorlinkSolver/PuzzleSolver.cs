@@ -223,19 +223,20 @@ namespace Colorlink
         #region Static Methods
         public static Puzzle GenerateSolvableLevel(int width, int height, int maxColor)
         {
-            return GenerateSolvableLevel(width, height, maxColor, false);
+            return GenerateSolvableLevel(width, height, maxColor, false, -1);
         }
 
         /// <summary>
         /// Generates levels and checks their solvable status until one is found to be solvable.
         /// </summary>
         /// <param name="filterLame">Filter out levels where any one start node is adjacent to its end node. Takes much longer to generate.</param>
-        public static Puzzle GenerateSolvableLevel(int width, int height, int maxColor, bool filterLame)
+        /// <param name="numberOfPipes">Set the number of pipes the level contains. Set to -1 for the generator to decide.</param>
+        public static Puzzle GenerateSolvableLevel(int width, int height, int maxColor, bool filterLame, int numberOfPipes)
         {
             Grid gen;
             do
             {
-                gen = new Grid(GenerateLevel(width, height, maxColor));
+                gen = new Grid(GenerateLevel(width, height, maxColor, numberOfPipes));
             } while (!PuzzleSolver.IsItSolvable(gen.grid, false) || !NotLame(gen, filterLame));
             return new Puzzle(gen, PuzzleSolver.lastSolution);
         }
@@ -265,12 +266,13 @@ namespace Colorlink
         }
 
         public static Random gen;
-        public static int[,] GenerateLevel(int width, int height, int maxColor)
+        public static int[,] GenerateLevel(int width, int height, int maxColor, int numberOfPipes)
         {
             if (gen == null) gen = new Random();
             if ((width == 1 && height == 1) || width < 1 || height < 1) throw new Exception("No");
             int minus = 0;
             int colors = (int)(Math.Sqrt(width * height) - minus);
+            if (numberOfPipes > 0) colors = numberOfPipes;
             int[] colorsToUse = new int[colors];
             for (int i = 0; i < colors; i++)
             {
@@ -433,11 +435,11 @@ namespace Colorlink
             if (grid[pathsOfColors.Last().lastPoint.Y, pathsOfColors.Last().lastPoint.X] == pathsOfColors.Last().color)
             {
                 startNodes.RemoveAt(0);
-                try
+                if (startNodes.Count > 0)
                 {
                     pathsOfColors.Add(new Path(startNodes[0], colors[1 + Array.IndexOf(colors, pathsOfColors.Last().color)]));
                 }
-                catch
+                else
                 {
                     bool successful = true;
                     foreach (int i in FlattenGrid())
