@@ -1,0 +1,3 @@
+﻿Add more levels
+Make level generator && solver
+Add level completion
