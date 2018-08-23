@@ -2,6 +2,7 @@
 using System.IO;
 using Colorlink;
 using System.Collections.Generic;
+using System.Timers;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace CLGen
             int maxColor = int.Parse(args[3]);
             int numberOfPipes = -1;
             if (args.Length > 4) numberOfPipes = int.Parse(args[4]);
+            DateTime start = DateTime.Now;
             Console.WriteLine($"Generating {num} {width}x{height} colorlink level(s), with {(maxColor + 1)} possible colors");
             int startCursor = Console.CursorTop;
             string filename = $"{width}x{height}.txt";
@@ -71,7 +73,8 @@ namespace CLGen
             }
             File.AppendAllText(filepath, output);
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("All done.");
+            DateTime stop = DateTime.Now;
+            Console.WriteLine($"All done.  Generated in {(stop - start).TotalSeconds}");
             Console.ForegroundColor = ConsoleColor.Gray;
         }
     }
