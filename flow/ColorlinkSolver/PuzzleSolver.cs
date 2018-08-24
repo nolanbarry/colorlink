@@ -43,7 +43,7 @@ namespace Colorlink
         {
             SolvingGrid info = new SolvingGrid(grid);
 
-            if (filterLameGrids)
+            if (filterLameGrids) // filters grids that have any two same-color nodes adjacent to each other
             {
                 for (int i = 0; i < info.colors.Length; i++)
                 {
@@ -341,7 +341,7 @@ namespace Colorlink
     {
         public enum SolveState { Solving, Failed, Success }
         public int[,] grid { get; private set; }
-        public List<Point> startNodes { get; private set; }
+        public Point[] startNodes { get; private set; }
         public List<Point> endNodes { get; private set; }
         public int[] colors { get; private set; }
         public List<Path> pathsOfColors;
@@ -350,7 +350,7 @@ namespace Colorlink
         public SolvingGrid(int[,] grid)
         {
             this.grid = grid;
-            startNodes = new List<Point>();
+            List<Point> starts = new List<Point>();
             endNodes = new List<Point>();
             List<int> colorsList = new List<int>();
             // find the start nodes, colors, and end nodes
@@ -360,7 +360,7 @@ namespace Colorlink
                 {
                     if (grid[y, x] != -1 && !colorsList.Contains(grid[y, x]))
                     {
-                        startNodes.Add(new Point(x, y));
+                        starts.Add(new Point(x, y));
                         colorsList.Add(grid[y, x]);
                     }
                     else if (colorsList.Contains(grid[y, x]))
@@ -369,6 +369,7 @@ namespace Colorlink
                     }
                 }
             }
+            startNodes = starts.ToArray();
             state = SolveState.Solving;
             colors = colorsList.ToArray();
             pathsOfColors = new List<Path>();
@@ -376,7 +377,7 @@ namespace Colorlink
 
             // sort endNodes to correspond correctly with startNodes
             List<Point> endNodesSorted = new List<Point>();
-            for (int i = 0; i < startNodes.Count; i++)
+            for (int i = 0; i < startNodes.Length; i++)
             {
                 for (int j = 0; j < endNodes.Count; j++)
                 {
@@ -434,10 +435,9 @@ namespace Colorlink
             pathsOfColors.Last().Add(d);
             if (grid[pathsOfColors.Last().lastPoint.Y, pathsOfColors.Last().lastPoint.X] == pathsOfColors.Last().color)
             {
-                startNodes.RemoveAt(0);
-                if (startNodes.Count > 0)
+                if (pathsOfColors.Count < startNodes.Length)
                 {
-                    pathsOfColors.Add(new Path(startNodes[0], colors[1 + Array.IndexOf(colors, pathsOfColors.Last().color)]));
+                    pathsOfColors.Add(new Path(startNodes[pathsOfColors.Count], colors[1 + Array.IndexOf(colors, pathsOfColors.Last().color)]));
                 }
                 else
                 {

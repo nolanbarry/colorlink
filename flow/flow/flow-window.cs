@@ -86,7 +86,6 @@ namespace Colorlink
             OnResize(this, new EventArgs());
 
             currentPuzzle = method.Next();
-            method.SetMethod(PuzzleRetriever.RetrievalMethod.Generate);
 
             mouseX = 0;
             mouseY = 0;
