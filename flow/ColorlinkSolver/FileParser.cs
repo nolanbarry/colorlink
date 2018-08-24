@@ -57,22 +57,25 @@ namespace Colorlink
                         currentGrid.Add(lines[currentline]);
                         currentline++;
                     } while (lines[currentline].Trim() != "");
-                    while (currentGrid[0].Trim() == "") { currentGrid.RemoveAt(0); } // remove blank lines from top of grid
-                    int width = currentGrid[0].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
-                    int[,] parsedGrid = new int[currentGrid.Count, width]; // parse level into int[,];
-                    for (int i = 0; i < currentGrid.Count; i++)
+                    if (currentGrid.Count > 1)
                     {
-                        string[] splitLine = currentGrid[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        for (int j = 0; j < splitLine.Length; j++)
+                        while (currentGrid[0].Trim() == "") { currentGrid.RemoveAt(0); } // remove blank lines from top of grid
+                        int width = currentGrid[0].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
+                        int[,] parsedGrid = new int[currentGrid.Count, width]; // parse level into int[,];
+                        for (int i = 0; i < currentGrid.Count; i++)
                         {
-                            if (int.TryParse(splitLine[j], out int parsedInt))
-                                parsedGrid[i, j] = parsedInt;
-                            else
-                                parsedGrid[i, j] = -1;
+                            string[] splitLine = currentGrid[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                            for (int j = 0; j < splitLine.Length; j++)
+                            {
+                                if (int.TryParse(splitLine[j], out int parsedInt))
+                                    parsedGrid[i, j] = parsedInt;
+                                else
+                                    parsedGrid[i, j] = -1;
 
+                            }
                         }
+                        loadingLevels.Add(new Grid(parsedGrid));
                     }
-                    loadingLevels.Add(new Grid(parsedGrid));
                 } while (currentline < lines.Count - 2);
                 return loadingLevels.ToArray();
             }

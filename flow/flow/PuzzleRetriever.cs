@@ -47,7 +47,7 @@ namespace Colorlink
             puzzleparser = new FileParser(defaultFile);
             genSize = generationSize;
             this.maxColor = maxColor;
-            puzzlegen.QueueLevels(levelsToGenerateAtOnce, genSize.Width, genSize.Height, maxColor);
+            //puzzlegen.QueueLevels(levelsToGenerateAtOnce, genSize.Width, genSize.Height, maxColor);
         }
 
         public Puzzle Next()

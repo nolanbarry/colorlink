@@ -35,15 +35,14 @@ namespace Colorlink
         /// <returns></returns>
         public static bool IsItSolvable(int[,] grid)
         {
-            SolvingGrid info = new SolvingGrid(grid);
-            return Solve(info);
+            return IsItSolvable(grid, false);
         }
 
         public static bool IsItSolvable(int[,] grid, bool filterLameGrids)
         {
             SolvingGrid info = new SolvingGrid(grid);
 
-            if (filterLameGrids)
+            if (filterLameGrids) // filters grids that have any two same-color nodes adjacent to each other
             {
                 for (int i = 0; i < info.colors.Length; i++)
                 {
@@ -63,21 +62,21 @@ namespace Colorlink
         private static bool Solve(SolvingGrid info)
         {
             Path.Direction[] potentials = GetMoveOptions(info);
-            bool solved = false;
             foreach (Path.Direction d in potentials)
             {
-                SolvingGrid cloned = (SolvingGrid)DeepClone(info);
-                cloned.AddDirectionToCurrentPath(d);
-                if (cloned.state == SolvingGrid.SolveState.Success)
+                info.AddDirectionToCurrentPath(d);
+                if (info.state == SolvingGrid.SolveState.Success)
                 {
-                    lastSolution = new Grid(cloned);
+                    lastSolution = new Grid(info);
                     return true;
                 }
-                else if (cloned.state == SolvingGrid.SolveState.Solving)
-                    if (Solve(cloned)) return true;
+                else if (info.state == SolvingGrid.SolveState.Solving)
+                {
+                    if (Solve(info)) return true;
+                }
+                info.RemoveLastAction();
             }
-
-            return solved;
+            return false;
         }
 
         /// <summary>
@@ -341,7 +340,7 @@ namespace Colorlink
     {
         public enum SolveState { Solving, Failed, Success }
         public int[,] grid { get; private set; }
-        public List<Point> startNodes { get; private set; }
+        public Point[] startNodes { get; private set; }
         public List<Point> endNodes { get; private set; }
         public int[] colors { get; private set; }
         public List<Path> pathsOfColors;
@@ -350,7 +349,7 @@ namespace Colorlink
         public SolvingGrid(int[,] grid)
         {
             this.grid = grid;
-            startNodes = new List<Point>();
+            List<Point> starts = new List<Point>();
             endNodes = new List<Point>();
             List<int> colorsList = new List<int>();
             // find the start nodes, colors, and end nodes
@@ -360,7 +359,7 @@ namespace Colorlink
                 {
                     if (grid[y, x] != -1 && !colorsList.Contains(grid[y, x]))
                     {
-                        startNodes.Add(new Point(x, y));
+                        starts.Add(new Point(x, y));
                         colorsList.Add(grid[y, x]);
                     }
                     else if (colorsList.Contains(grid[y, x]))
@@ -369,6 +368,7 @@ namespace Colorlink
                     }
                 }
             }
+            startNodes = starts.ToArray();
             state = SolveState.Solving;
             colors = colorsList.ToArray();
             pathsOfColors = new List<Path>();
@@ -376,7 +376,7 @@ namespace Colorlink
 
             // sort endNodes to correspond correctly with startNodes
             List<Point> endNodesSorted = new List<Point>();
-            for (int i = 0; i < startNodes.Count; i++)
+            for (int i = 0; i < startNodes.Length; i++)
             {
                 for (int j = 0; j < endNodes.Count; j++)
                 {
@@ -434,21 +434,35 @@ namespace Colorlink
             pathsOfColors.Last().Add(d);
             if (grid[pathsOfColors.Last().lastPoint.Y, pathsOfColors.Last().lastPoint.X] == pathsOfColors.Last().color)
             {
-                startNodes.RemoveAt(0);
-                if (startNodes.Count > 0)
+                if (pathsOfColors.Count < startNodes.Length)
                 {
-                    pathsOfColors.Add(new Path(startNodes[0], colors[1 + Array.IndexOf(colors, pathsOfColors.Last().color)]));
+                    pathsOfColors.Add(new Path(startNodes[pathsOfColors.Count], colors[1 + Array.IndexOf(colors, pathsOfColors.Last().color)]));
                 }
                 else
                 {
+                    
                     bool successful = true;
                     foreach (int i in FlattenGrid())
                     {
                         if (i == -1) successful = false;
                     }
+                    
                     if (successful) state = SolveState.Success;
                     else state = SolveState.Failed;
                 }
+            }
+        }
+
+        public void RemoveLastAction()
+        {
+            state = SolveState.Solving;
+            if (pathsOfColors.Last().path.Count > 0)
+            {
+                pathsOfColors.Last().RemoveLast();
+            } else if (pathsOfColors.Count > 1)
+            {
+                pathsOfColors.Remove(pathsOfColors.Last());
+                pathsOfColors.Last().RemoveLast();
             }
         }
     }
