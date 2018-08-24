@@ -35,8 +35,7 @@ namespace Colorlink
         /// <returns></returns>
         public static bool IsItSolvable(int[,] grid)
         {
-            SolvingGrid info = new SolvingGrid(grid);
-            return Solve(info);
+            return IsItSolvable(grid, false);
         }
 
         public static bool IsItSolvable(int[,] grid, bool filterLameGrids)
@@ -63,21 +62,21 @@ namespace Colorlink
         private static bool Solve(SolvingGrid info)
         {
             Path.Direction[] potentials = GetMoveOptions(info);
-            bool solved = false;
             foreach (Path.Direction d in potentials)
             {
-                SolvingGrid cloned = (SolvingGrid)DeepClone(info);
-                cloned.AddDirectionToCurrentPath(d);
-                if (cloned.state == SolvingGrid.SolveState.Success)
+                info.AddDirectionToCurrentPath(d);
+                if (info.state == SolvingGrid.SolveState.Success)
                 {
-                    lastSolution = new Grid(cloned);
+                    lastSolution = new Grid(info);
                     return true;
                 }
-                else if (cloned.state == SolvingGrid.SolveState.Solving)
-                    if (Solve(cloned)) return true;
+                else if (info.state == SolvingGrid.SolveState.Solving)
+                {
+                    if (Solve(info)) return true;
+                }
+                info.RemoveLastAction();
             }
-
-            return solved;
+            return false;
         }
 
         /// <summary>
@@ -441,14 +440,29 @@ namespace Colorlink
                 }
                 else
                 {
+                    
                     bool successful = true;
                     foreach (int i in FlattenGrid())
                     {
                         if (i == -1) successful = false;
                     }
+                    
                     if (successful) state = SolveState.Success;
                     else state = SolveState.Failed;
                 }
+            }
+        }
+
+        public void RemoveLastAction()
+        {
+            state = SolveState.Solving;
+            if (pathsOfColors.Last().path.Count > 0)
+            {
+                pathsOfColors.Last().RemoveLast();
+            } else if (pathsOfColors.Count > 1)
+            {
+                pathsOfColors.Remove(pathsOfColors.Last());
+                pathsOfColors.Last().RemoveLast();
             }
         }
     }
