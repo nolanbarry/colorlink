@@ -56,10 +56,15 @@ namespace Colorlink
             if (path.Count > 0)
             {
                 if ((int)path.Last() % 2 == (int)d % 2 && (int)path.Last() != (int)d)
-                    path.RemoveAt(path.Count - 1);
+                    RemoveLast();
                 else path.Add(d);
             }
             else path.Add(d);
+        }
+
+        public void RemoveLast()
+        {
+            path.RemoveAt(path.Count - 1);
         }
     }
 }
